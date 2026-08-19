@@ -1,0 +1,256 @@
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #05070d;
+    --panel: #0b101a;
+    --cyan: #00d9ff;
+    --cyan-soft: rgba(0, 217, 255, 0.15);
+    --text: #f2f7ff;
+    --muted: #7d8a9d;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at center,
+            #101c2c 0%,
+            var(--bg) 48%,
+            #020307 100%
+        );
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#app {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.top-bar {
+    height: 64px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.brand {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 4px;
+}
+
+.brand-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 15px var(--cyan);
+}
+
+#connection-status {
+    color: var(--cyan);
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+main {
+    width: 100%;
+    max-width: 700px;
+    margin: auto;
+    padding: 25px 18px;
+}
+
+.core-section {
+    text-align: center;
+}
+
+.core {
+    position: relative;
+    width: 190px;
+    height: 190px;
+    margin: 30px auto 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.core-ring {
+    position: absolute;
+    border: 1px solid var(--cyan);
+    border-radius: 50%;
+}
+
+.ring-1 {
+    width: 180px;
+    height: 180px;
+    opacity: 0.35;
+    animation: rotate 12s linear infinite;
+}
+
+.ring-2 {
+    width: 135px;
+    height: 135px;
+    opacity: 0.65;
+    animation: rotateReverse 8s linear infinite;
+}
+
+.core-center {
+    width: 90px;
+    height: 90px;
+    border: 2px solid var(--cyan);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    font-weight: bold;
+    color: var(--cyan);
+    box-shadow:
+        0 0 20px var(--cyan),
+        inset 0 0 20px var(--cyan-soft);
+}
+
+h1 {
+    margin: 10px 0 5px;
+    font-size: 30px;
+    letter-spacing: 10px;
+}
+
+#system-status {
+    margin: 0;
+    color: var(--muted);
+}
+
+#conversation {
+    min-height: 220px;
+    margin-top: 35px;
+    padding-bottom: 20px;
+}
+
+.message {
+    max-width: 90%;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    line-height: 1.5;
+}
+
+.message.jarvis {
+    background: var(--cyan-soft);
+    border: 1px solid rgba(0,217,255,0.15);
+}
+
+.message-name {
+    margin-bottom: 5px;
+    color: var(--cyan);
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.command-area {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+#command {
+    flex: 1;
+    min-width: 0;
+    padding: 15px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 13px;
+    outline: none;
+    background: var(--panel);
+    color: white;
+    font-size: 15px;
+}
+
+#command:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 15px var(--cyan-soft);
+}
+
+button {
+    width: 52px;
+    min-width: 52px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 13px;
+    background: var(--panel);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: var(--cyan);
+}
+
+footer {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateReverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+@media (max-width: 500px) {
+
+    main {
+        padding: 15px;
+    }
+
+    .core {
+        width: 160px;
+        height: 160px;
+    }
+
+    .ring-1 {
+        width: 150px;
+        height: 150px;
+    }
+
+    .ring-2 {
+        width: 115px;
+        height: 115px;
+    }
+
+    h1 {
+        font-size: 25px;
+        letter-spacing: 7px;
+    }
+
+    footer {
+        font-size: 9px;
+    }
+}
