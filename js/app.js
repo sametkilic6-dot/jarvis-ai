@@ -1,162 +1,18 @@
 "use strict";
 
-const JarvisApp = {
-
-    initialized: false,
-
-    init() {
-
-        if (this.initialized) {
-            return;
-        }
-
-        this.initialized = true;
-
-        this.bindEvents();
-
-        this.updateStatus(
-            "Sistemler çevrimiçi."
-        );
-
-    },
-
-
-    bindEvents() {
-
-        const send =
-            document.getElementById("send");
-
-        const command =
-            document.getElementById("command");
-
-
-        if (send) {
-
-            send.addEventListener(
-                "click",
-                () => this.processCommand()
-            );
-
-        }
-
-
-        if (command) {
-
-            command.addEventListener(
-                "keydown",
-                event => {
-
-                    if (
-                        event.key === "Enter"
-                    ) {
-
-                        event.preventDefault();
-
-                        this.processCommand();
-
-                    }
-
-                }
-            );
-
-        }
-
-    },
-
-
-    async processCommand() {
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
         const input =
             document.getElementById(
                 "command"
             );
 
-
-        if (!input) {
-            return;
-        }
-
-
-        const text =
-            input.value.trim();
-
-
-        if (!text) {
-            return;
-        }
-
-
-        input.value = "";
-
-
-        this.addMessage(
-            text,
-            "user"
-        );
-
-
-        this.updateStatus(
-            "JARVIS düşünüyor..."
-        );
-
-
-        try {
-
-            const result =
-                await AI_CORE.think(
-                    text
-                );
-
-
-            const response =
-                result &&
-                result.response
-                    ? result.response
-                    : "JARVIS cevap vermedi.";
-
-
-            this.addMessage(
-                response,
-                "jarvis"
+        const button =
+            document.getElementById(
+                "send"
             );
-
-
-            this.updateStatus(
-                "Sistemler çevrimiçi."
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                "JARVIS ERROR:",
-                error
-            );
-
-
-            this.addMessage(
-                "JARVIS hata verdi: " +
-                (
-                    error.message ||
-                    error
-                ),
-                "jarvis"
-            );
-
-
-            this.updateStatus(
-                "Hata oluştu."
-            );
-
-        }
-
-    },
-
-
-    addMessage(
-        text,
-        sender
-    ) {
 
         const conversation =
             document.getElementById(
@@ -164,106 +20,68 @@ const JarvisApp = {
             );
 
 
-        if (!conversation) {
-            return;
-        }
+        button.addEventListener(
+            "click",
+            async () => {
 
+                const text =
+                    input.value.trim();
 
-        const message =
-            document.createElement(
-                "div"
-            );
+                if (!text) return;
 
+                input.value = "";
 
-        message.className =
-            sender === "user"
-                ? "message user"
-                : "message jarvis";
-
-
-        if (
-            sender !== "user"
-        ) {
-
-            const name =
-                document.createElement(
-                    "div"
+                addMessage(
+                    "Sen: " + text
                 );
 
 
-            name.className =
-                "message-name";
+                const result =
+                    await AI_CORE.think(
+                        text
+                    );
 
 
-            name.textContent =
-                "JARVIS";
+                addMessage(
+                    "JARVIS: " +
+                    result.response
+                );
 
-
-            message.appendChild(
-                name
-            );
-
-        }
-
-
-        const content =
-            document.createElement(
-                "div"
-            );
-
-
-        content.textContent =
-            text;
-
-
-        message.appendChild(
-            content
+            }
         );
 
 
-        conversation.appendChild(
-            message
+        input.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key === "Enter"
+                ) {
+
+                    button.click();
+
+                }
+
+            }
         );
 
 
-        conversation.scrollTop =
-            conversation.scrollHeight;
+        function addMessage(text) {
 
-    },
+            const message =
+                document.createElement(
+                    "p"
+                );
 
-
-    updateStatus(text) {
-
-        const status =
-            document.getElementById(
-                "system-status"
-            );
-
-
-        if (status) {
-
-            status.textContent =
+            message.textContent =
                 text;
+
+            conversation.appendChild(
+                message
+            );
 
         }
 
     }
-
-};
-
-
-if (
-    document.readyState ===
-    "loading"
-) {
-
-    document.addEventListener(
-        "DOMContentLoaded",
-        () => JarvisApp.init()
-    );
-
-} else {
-
-    JarvisApp.init();
-
-}
+);
