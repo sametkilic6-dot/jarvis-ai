@@ -1,208 +1,382 @@
-const commandInput = document.getElementById("command");
-const sendButton = document.getElementById("send");
-const microphoneButton = document.getElementById("microphone");
+"use strict";
 
-const conversation = document.getElementById("conversation");
-const systemStatus = document.getElementById("system-status");
+/*
+ * JARVIS APPLICATION CORE
+ * Türkçe kişisel AI asistanı
+ */
 
-function addMessage(text, sender = "jarvis") {
+const JarvisApp = {
 
-    const message = document.createElement("div");
+    initialized: false,
 
-    message.className =
-        sender === "jarvis"
-            ? "message jarvis"
-            : "message user";
+    init() {
 
-    message.textContent = text;
-
-    conversation.appendChild(message);
-
-    conversation.scrollTop =
-        conversation.scrollHeight;
-}
-
-
-function getLocalResponse(command) {
-
-    const text = command.toLowerCase().trim();
-
-    if (
-        text.includes("merhaba") ||
-        text.includes("selam")
-    ) {
-        return "Merhaba Samet. Hazırım.";
-    }
-
-    if (text.includes("kimsin")) {
-        return "Ben JARVIS. Samet için geliştirilen kişisel yapay zekâ asistanıyım.";
-    }
-
-    if (text.includes("nasılsın")) {
-        return "Tüm temel sistemler normal. AI çekirdeğinin bağlantısını bekliyorum.";
-    }
-
-    if (text.includes("saat")) {
-
-        return `Şu an saat ${new Date().toLocaleTimeString(
-            "tr-TR",
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        )}.`;
-    }
-
-    if (text.includes("tarih")) {
-
-        return `Bugünün tarihi ${new Date().toLocaleDateString(
-            "tr-TR"
-        )}.`;
-    }
-
-    return "Komutunu aldım. Gerçek AI çekirdeği bağlandığında bunu daha gelişmiş şekilde işleyebileceğim.";
-}
-
-
-function speak(text) {
-
-    if (!("speechSynthesis" in window)) {
-        return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    const voice = new SpeechSynthesisUtterance(text);
-
-    voice.lang = "tr-TR";
-    voice.rate = 0.95;
-    voice.pitch = 0.9;
-
-    window.speechSynthesis.speak(voice);
-}
-
-
-function processCommand() {
-
-    const command =
-        commandInput.value.trim();
-
-    if (!command) {
-        return;
-    }
-
-    addMessage(command, "user");
-
-    commandInput.value = "";
-
-    systemStatus.textContent =
-        "Komut işleniyor...";
-
-    setTimeout(() => {
-
-        const response =
-            getLocalResponse(command);
-
-        addMessage(response, "jarvis");
-
-        speak(response);
-
-        systemStatus.textContent =
-            "Sistemler hazır.";
-
-    }, 300);
-}
-
-
-sendButton.addEventListener(
-    "click",
-    processCommand
-);
-
-
-commandInput.addEventListener(
-    "keydown",
-    event => {
-
-        if (event.key === "Enter") {
-            processCommand();
+        if (this.initialized) {
+            return;
         }
 
-    }
-);
+        this.initialized = true;
+
+        this.bindEvents();
+
+        this.updateStatus(
+            "JARVIS çekirdeği hazır."
+        );
+
+        console.log(
+            "JARVIS başlatıldı."
+        );
+
+    },
 
 
-microphoneButton.addEventListener(
-    "click",
-    startVoiceRecognition
-);
+    bindEvents() {
+
+        const sendButton =
+            document.getElementById("send");
+
+        const commandInput =
+            document.getElementById("command");
+
+        const microphone =
+            document.getElementById("microphone");
 
 
-function startVoiceRecognition() {
+        if (sendButton) {
 
-    const Recognition =
-        window.SpeechRecognition ||
-        window.webkitSpeechRecognition;
+            sendButton.addEventListener(
+                "click",
+                () => this.processCommand()
+            );
 
-    if (!Recognition) {
+        }
 
-        addMessage(
-            "Bu tarayıcı sesli komut özelliğini desteklemiyor.",
+
+        if (commandInput) {
+
+            commandInput.addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key === "Enter"
+                    ) {
+
+                        event.preventDefault();
+
+                        this.processCommand();
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        if (microphone) {
+
+            microphone.addEventListener(
+                "click",
+                () => this.startVoice()
+            );
+
+        }
+
+    },
+
+
+    async processCommand() {
+
+        const input =
+            document.getElementById("command");
+
+        if (!input) {
+            return;
+        }
+
+
+        const command =
+            input.value.trim();
+
+
+        if (!command) {
+            return;
+        }
+
+
+        input.value = "";
+
+
+        this.addMessage(
+            command,
+            "user"
+        );
+
+
+        this.updateStatus(
+            "Komut analiz ediliyor..."
+        );
+
+
+        /*
+         * Kullanıcı mesajını hafızaya kaydet.
+         */
+
+        if (
+            typeof Memory !== "undefined"
+        ) {
+
+            Memory.addConversation(
+                "user",
+                command
+            );
+
+        }
+
+
+        let response;
+
+
+        try {
+
+            /*
+             * AI Core mevcutsa kullan.
+             */
+
+            if (
+                typeof AI_CORE !== "undefined" &&
+                typeof AI_CORE.think === "function"
+            ) {
+
+                const result =
+                    await AI_CORE.think(
+                        command
+                    );
+
+                response =
+                    result?.response ||
+                    "Komut işlendi fakat cevap oluşturulamadı.";
+
+            } else {
+
+                response =
+                    "AI Core henüz yüklenmedi.";
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "JARVIS AI Core hatası:",
+                error
+            );
+
+            response =
+                "Bir sistem hatası oluştu.";
+
+        }
+
+
+        /*
+         * Cevabı ekrana gönder.
+         */
+
+        this.addMessage(
+            response,
             "jarvis"
         );
 
-        return;
-    }
 
-    const recognition =
-        new Recognition();
-
-    recognition.lang = "tr-TR";
-
-    recognition.continuous = false;
-
-    recognition.interimResults = false;
-
-    systemStatus.textContent =
-        "Seni dinliyorum...";
-
-    recognition.start();
-
-
-    recognition.onresult = event => {
-
-        const result =
-            event.results[0][0].transcript;
-
-        commandInput.value = result;
-
-        processCommand();
-    };
-
-
-    recognition.onerror = () => {
-
-        systemStatus.textContent =
-            "Ses algılanamadı.";
-
-    };
-
-
-    recognition.onend = () => {
+        /*
+         * Cevabı hafızaya kaydet.
+         */
 
         if (
-            systemStatus.textContent ===
-            "Seni dinliyorum..."
+            typeof Memory !== "undefined"
         ) {
 
-            systemStatus.textContent =
-                "Sistemler hazır.";
+            Memory.addConversation(
+                "assistant",
+                response
+            );
+
         }
 
-    };
+
+        /*
+         * Sesli cevap.
+         */
+
+        if (
+            typeof Voice !== "undefined" &&
+            typeof Voice.speak === "function"
+        ) {
+
+            Voice.speak(
+                response
+            );
+
+        }
+
+
+        this.updateStatus(
+            "Sistemler hazır."
+        );
+
+    },
+
+
+    addMessage(
+        text,
+        sender = "jarvis"
+    ) {
+
+        const conversation =
+            document.getElementById(
+                "conversation"
+            );
+
+
+        if (!conversation) {
+            return;
+        }
+
+
+        const message =
+            document.createElement(
+                "div"
+            );
+
+
+        message.className =
+            sender === "user"
+                ? "message user"
+                : "message jarvis";
+
+
+        if (sender === "jarvis") {
+
+            const name =
+                document.createElement(
+                    "div"
+                );
+
+            name.className =
+                "message-name";
+
+            name.textContent =
+                "JARVIS";
+
+            message.appendChild(
+                name
+            );
+
+        }
+
+
+        const content =
+            document.createElement(
+                "div"
+            );
+
+        content.textContent =
+            text;
+
+
+        message.appendChild(
+            content
+        );
+
+
+        conversation.appendChild(
+            message
+        );
+
+
+        window.requestAnimationFrame(
+            () => {
+
+                conversation.scrollTop =
+                    conversation.scrollHeight;
+
+            }
+        );
+
+    },
+
+
+    updateStatus(text) {
+
+        const status =
+            document.getElementById(
+                "system-status"
+            );
+
+
+        if (status) {
+
+            status.textContent =
+                text;
+
+        }
+
+    },
+
+
+    startVoice() {
+
+        if (
+            typeof Voice === "undefined"
+        ) {
+
+            this.addMessage(
+                "Ses sistemi henüz hazır değil.",
+                "jarvis"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            typeof Voice.listen !== "function"
+        ) {
+
+            this.addMessage(
+                "Ses tanıma sistemi kullanılamıyor.",
+                "jarvis"
+            );
+
+            return;
+
+        }
+
+
+        Voice.listen();
+
+    }
+
+};
+
+
+/*
+ * JARVIS'i başlat.
+ */
+
+if (
+    document.readyState === "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => JarvisApp.init()
+    );
+
+} else {
+
+    JarvisApp.init();
 
 }
-
-
-systemStatus.textContent =
-    "JARVIS çekirdeği hazır.";
