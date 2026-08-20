@@ -2,9 +2,15 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const input = document.getElementById("command");
-    const send = document.getElementById("send");
-    const conversation = document.getElementById("conversation");
+    const input =
+        document.getElementById("command");
+
+    const send =
+        document.getElementById("send");
+
+    const conversation =
+        document.getElementById("conversation");
+
 
     const WORKER_URL =
         "https://jarvis-ai.agitacer6.workers.dev/";
@@ -72,15 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ) {
 
             return {
-
                 name: null,
-
                 facts: {},
-
                 preferences: {},
-
                 recent: []
-
             };
 
         }
@@ -105,108 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    function isMemorySummary(text) {
-
-        const t =
-            text
-                .toLowerCase()
-                .replace(/ı/g, "i")
-                .replace(/ş/g, "s")
-                .replace(/ğ/g, "g")
-                .replace(/ü/g, "u")
-                .replace(/ö/g, "o")
-                .replace(/ç/g, "c")
-                .trim();
-
-
-        return (
-
-            t.includes("benim hakkimda ne biliyorsun") ||
-
-            t.includes("benim hakkimda neler biliyorsun") ||
-
-            t.includes("benim bilgilerim neler") ||
-
-            t.includes("hafizamda ne var") ||
-
-            t.includes("hafizamda neler var") ||
-
-            t.includes("benimle ilgili ne biliyorsun") ||
-
-            t.includes("beni taniyor musun")
-
-        );
-
-    }
-
-
-    function createMemorySummary(memory) {
-
-        const lines = [];
-
-
-        if (memory.name) {
-
-            lines.push(
-                "Ad: " +
-                memory.name
-            );
-
-        }
-
-
-        Object.entries(
-            memory.facts || {}
-        ).forEach(
-            ([key, value]) => {
-
-                lines.push(
-                    key +
-                    ": " +
-                    value
-                );
-
-            }
-        );
-
-
-        Object.entries(
-            memory.preferences || {}
-        ).forEach(
-            ([key, value]) => {
-
-                lines.push(
-                    key +
-                    ": " +
-                    value
-                );
-
-            }
-        );
-
-
-        if (!lines.length) {
-
-            return (
-                "Hafızamda senin hakkında " +
-                "kayıtlı bilgi bulunmuyor."
-            );
-
-        }
-
-
-        return (
-            "Hafızamda bulunan gerçek bilgiler:\n\n" +
-            lines
-                .map(
-                    item => "• " + item
-                )
-                .join("\n")
-        );
-
-    }
-
-
     async function sendMessage() {
 
         const text =
@@ -214,9 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!text) {
-
             return;
-
         }
 
 
@@ -232,10 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
 
             /*
-             * 1. ÖNCE YEREL AI CORE
+             * =================================
+             * 1. ÖNCE LOCAL AI CORE
+             * =================================
              *
-             * İsim, favori renk gibi
-             * hafıza işlemleri burada yapılır.
+             * Hafıza gerektiren komutlar burada
+             * işlenir.
              */
 
             if (
@@ -247,59 +146,39 @@ document.addEventListener("DOMContentLoaded", () => {
                     await AI_CORE.think(text);
 
 
-                /*
-                 * AI Core gerçekten
-                 * özel bir cevap ürettiyse
-                 * doğrudan kullan.
-                 */
-
                 if (
                     localResult &&
-                    localResult.response
+                    localResult.response &&
+                    !localResult.response.startsWith(
+                        "Komutunu aldım:"
+                    )
                 ) {
 
-                    const lower =
-                        text.toLowerCase();
+                    addMessage(
+                        localResult.response,
+                        "jarvis"
+                    );
 
 
-                    const isKnownCommand =
-                        lower.includes("benim adım") ||
-                        lower.includes("ismim") ||
-                        lower.includes("en sevdiğim renk") ||
-                        lower.includes("sevdiğim renk ne") ||
-                        lower.includes("benim adım ne") ||
-                        lower.includes("ismim ne");
+                    if (
+                        typeof Memory !==
+                        "undefined"
+                    ) {
 
-
-                    if (isKnownCommand) {
-
-                        addMessage(
-                            localResult.response,
-                            "jarvis"
+                        Memory.add(
+                            "user",
+                            text
                         );
 
-
-                        if (
-                            typeof Memory !==
-                            "undefined"
-                        ) {
-
-                            Memory.add(
-                                "user",
-                                text
-                            );
-
-                            Memory.add(
-                                "jarvis",
-                                localResult.response
-                            );
-
-                        }
-
-
-                        return;
+                        Memory.add(
+                            "jarvis",
+                            localResult.response
+                        );
 
                     }
+
+
+                    return;
 
                 }
 
@@ -307,68 +186,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /*
-             * 2. HAFIZA ÖZETİ
-             *
-             * Bu soru AI'ya gitmez.
-             * Sadece gerçek Memory okunur.
+             * =================================
+             * 2. CLOUDFLARE WORKERS AI
+             * =================================
              */
 
             const memory =
                 getMemory();
 
 
-            if (
-                isMemorySummary(text)
-            ) {
-
-                const answer =
-                    createMemorySummary(
-                        memory
-                    );
-
-
-                addMessage(
-                    answer,
-                    "jarvis"
-                );
-
-
-                if (
-                    typeof Memory !==
-                    "undefined"
-                ) {
-
-                    Memory.add(
-                        "user",
-                        text
-                    );
-
-                    Memory.add(
-                        "jarvis",
-                        answer
-                    );
-
-                }
-
-
-                return;
-
-            }
-
-
-            /*
-             * 3. NORMAL MESAJ
-             *
-             * Cloudflare Workers AI
-             */
-
             const response =
                 await fetch(
                     WORKER_URL,
                     {
 
-                        method:
-                            "POST",
+                        method: "POST",
 
                         headers: {
 
@@ -384,7 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     text,
 
                                 memory:
-                                    getMemory()
+                                    memory
 
                             })
 
