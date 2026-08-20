@@ -40,20 +40,24 @@ const Memory = {
                             ? parsed.data
                             : [];
 
-                    this.profile =
-                        parsed.profile || {
+                    this.profile = {
 
-                            name: null,
+                        name:
+                            parsed.profile?.name || null,
 
-                            preferences: {},
+                        preferences:
+                            parsed.profile?.preferences || {},
 
-                            facts: {},
+                        facts:
+                            parsed.profile?.facts || {},
 
-                            personal: {},
+                        personal:
+                            parsed.profile?.personal || {},
 
-                            goals: {}
+                        goals:
+                            parsed.profile?.goals || {}
 
-                        };
+                    };
 
                 }
 
@@ -112,7 +116,6 @@ const Memory = {
 
         }
 
-
         this.data.push({
 
             role: role,
@@ -125,7 +128,6 @@ const Memory = {
 
         });
 
-
         if (this.data.length > 1000) {
 
             this.data =
@@ -133,148 +135,7 @@ const Memory = {
 
         }
 
-
         this.save();
-
-    },
-
-
-    addFact(key, value) {
-
-        if (!key || !value) {
-
-            return;
-
-        }
-
-
-        this.profile.facts[key] =
-            String(value).trim();
-
-
-        this.save();
-
-    },
-
-
-    getFact(key) {
-
-        if (!key) {
-
-            return null;
-
-        }
-
-
-        return (
-            this.profile.facts[key]
-            || null
-        );
-
-    },
-
-
-    addPreference(key, value) {
-
-        if (!key || !value) {
-
-            return;
-
-        }
-
-
-        this.profile.preferences[key] =
-            String(value).trim();
-
-
-        this.save();
-
-    },
-
-
-    getPreference(key) {
-
-        if (!key) {
-
-            return null;
-
-        }
-
-
-        return (
-            this.profile.preferences[key]
-            || null
-        );
-
-    },
-
-
-    addPersonal(key, value) {
-
-        if (!key || !value) {
-
-            return;
-
-        }
-
-
-        this.profile.personal[key] =
-            String(value).trim();
-
-
-        this.save();
-
-    },
-
-
-    getPersonal(key) {
-
-        if (!key) {
-
-            return null;
-
-        }
-
-
-        return (
-            this.profile.personal[key]
-            || null
-        );
-
-    },
-
-
-    addGoal(key, value) {
-
-        if (!key || !value) {
-
-            return;
-
-        }
-
-
-        this.profile.goals[key] =
-            String(value).trim();
-
-
-        this.save();
-
-    },
-
-
-    getGoal(key) {
-
-        if (!key) {
-
-            return null;
-
-        }
-
-
-        return (
-            this.profile.goals[key]
-            || null
-        );
 
     },
 
@@ -282,15 +143,11 @@ const Memory = {
     setName(name) {
 
         if (!name) {
-
             return;
-
         }
-
 
         this.profile.name =
             String(name).trim();
-
 
         this.save();
 
@@ -300,6 +157,202 @@ const Memory = {
     getName() {
 
         return this.profile.name;
+
+    },
+
+
+    addPersonal(key, value) {
+
+        if (!key || !value) {
+            return;
+        }
+
+        this.profile.personal[key] =
+            String(value).trim();
+
+        this.save();
+
+    },
+
+
+    getPersonal(key) {
+
+        if (!key) {
+            return null;
+        }
+
+        return (
+            this.profile.personal[key]
+            || null
+        );
+
+    },
+
+
+    removePersonal(key) {
+
+        if (!key) {
+            return;
+        }
+
+        delete this.profile.personal[key];
+
+        this.save();
+
+    },
+
+
+    addFact(key, value) {
+
+        if (!key || !value) {
+            return;
+        }
+
+        this.profile.facts[key] =
+            String(value).trim();
+
+        this.save();
+
+    },
+
+
+    getFact(key) {
+
+        if (!key) {
+            return null;
+        }
+
+        return (
+            this.profile.facts[key]
+            || null
+        );
+
+    },
+
+
+    removeFact(key) {
+
+        if (!key) {
+            return;
+        }
+
+        delete this.profile.facts[key];
+
+        this.save();
+
+    },
+
+
+    addPreference(key, value) {
+
+        if (!key || !value) {
+            return;
+        }
+
+        this.profile.preferences[key] =
+            String(value).trim();
+
+        this.save();
+
+    },
+
+
+    getPreference(key) {
+
+        if (!key) {
+            return null;
+        }
+
+        return (
+            this.profile.preferences[key]
+            || null
+        );
+
+    },
+
+
+    removePreference(key) {
+
+        if (!key) {
+            return;
+        }
+
+        delete this.profile.preferences[key];
+
+        this.save();
+
+    },
+
+
+    addGoal(key, value) {
+
+        if (!key || !value) {
+            return;
+        }
+
+        this.profile.goals[key] =
+            String(value).trim();
+
+        this.save();
+
+    },
+
+
+    getGoal(key) {
+
+        if (!key) {
+            return null;
+        }
+
+        return (
+            this.profile.goals[key]
+            || null
+        );
+
+    },
+
+
+    removeGoal(key) {
+
+        if (!key) {
+            return;
+        }
+
+        delete this.profile.goals[key];
+
+        this.save();
+
+    },
+
+
+    clearConversation() {
+
+        this.data = [];
+
+        this.save();
+
+    },
+
+
+    clearAll() {
+
+        this.data = [];
+
+        this.profile = {
+
+            name: null,
+
+            preferences: {},
+
+            facts: {},
+
+            personal: {},
+
+            goals: {}
+
+        };
+
+        this.save();
 
     },
 
@@ -314,21 +367,18 @@ const Memory = {
     search(query) {
 
         if (!query) {
-
             return [];
-
         }
-
 
         const text =
             String(query).toLowerCase();
 
+        return this.data.filter(item =>
 
-        return this.data.filter(
-            item =>
-                item.text
-                    .toLowerCase()
-                    .includes(text)
+            item.text
+                .toLowerCase()
+                .includes(text)
+
         );
 
     },
@@ -366,39 +416,6 @@ const Memory = {
         return {
             ...this.profile.goals
         };
-
-    },
-
-
-    clearConversation() {
-
-        this.data = [];
-
-        this.save();
-
-    },
-
-
-    clearAll() {
-
-        this.data = [];
-
-        this.profile = {
-
-            name: null,
-
-            preferences: {},
-
-            facts: {},
-
-            personal: {},
-
-            goals: {}
-
-        };
-
-
-        this.save();
 
     },
 
