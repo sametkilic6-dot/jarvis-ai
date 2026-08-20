@@ -18,9 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         message.classList.add(
             "message",
-            sender === "user"
-                ? "user"
-                : "jarvis"
+            sender === "user" ? "user" : "jarvis"
         );
 
 
@@ -63,10 +61,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         input.value = "";
 
-        addMessage(
-            text,
-            "user"
-        );
+
+        // Kullanıcı mesajını ekrana yaz
+        addMessage(text, "user");
+
+
+        // Kullanıcı mesajını hafızaya kaydet
+        if (typeof Memory !== "undefined") {
+
+            Memory.add(
+                "user",
+                text
+            );
+
+        }
 
 
         try {
@@ -75,10 +83,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 await AI_CORE.think(text);
 
 
+            const response =
+                result &&
+                result.response
+                    ? result.response
+                    : "Şu anda cevap oluşturamadım.";
+
+
+            // JARVIS cevabını ekrana yaz
             addMessage(
-                result.response,
+                response,
                 "jarvis"
             );
+
+
+            // JARVIS cevabını hafızaya kaydet
+            if (typeof Memory !== "undefined") {
+
+                Memory.add(
+                    "jarvis",
+                    response
+                );
+
+            }
 
 
         } catch (error) {
@@ -89,12 +116,28 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-            addMessage(
+            const errorMessage =
                 "Bir hata oluştu: " +
-                error.message,
+                error.message;
+
+
+            addMessage(
+                errorMessage,
                 "jarvis"
             );
+
+
+            if (typeof Memory !== "undefined") {
+
+                Memory.add(
+                    "jarvis",
+                    errorMessage
+                );
+
+            }
+
         }
+
     }
 
 
@@ -113,8 +156,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 event.preventDefault();
 
                 sendMessage();
+
             }
+
         }
+    );
+
+
+    console.log(
+        "🤖 JARVIS uygulaması hazır."
     );
 
 });
