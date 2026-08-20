@@ -1,12 +1,40 @@
-const JARVIS_MEMORY_KEY = "jarvis_memory_v1";
+"use strict";
+
+/*
+ * JARVIS MEMORY CORE
+ *
+ * Hafıza:
+ * - Profil bilgileri
+ * - Konuşmalar
+ * - Önemli anılar
+ * - Tercihler
+ *
+ * Depolama: localStorage
+ */
+
+const MEMORY_KEY =
+    "jarvis_memory_v1";
+
 
 const Memory = {
 
     data: {
+
         profile: {},
+
         memories: [],
+
         preferences: {},
+
         conversations: []
+
+    },
+
+
+    init() {
+
+        this.load();
+
     },
 
 
@@ -16,20 +44,31 @@ const Memory = {
 
             const saved =
                 localStorage.getItem(
-                    JARVIS_MEMORY_KEY
+                    MEMORY_KEY
                 );
 
-            if (saved) {
 
-                const parsed =
-                    JSON.parse(saved);
+            if (!saved) {
 
-                this.data = {
-                    ...this.data,
-                    ...parsed
-                };
+                this.save();
+
+                return;
 
             }
+
+
+            const parsed =
+                JSON.parse(saved);
+
+
+            this.data = {
+
+                ...this.data,
+
+                ...parsed
+
+            };
+
 
         } catch (error) {
 
@@ -48,8 +87,10 @@ const Memory = {
         try {
 
             localStorage.setItem(
-                JARVIS_MEMORY_KEY,
-                JSON.stringify(this.data)
+                MEMORY_KEY,
+                JSON.stringify(
+                    this.data
+                )
             );
 
         } catch (error) {
@@ -64,27 +105,57 @@ const Memory = {
     },
 
 
-    remember(key, value) {
+    remember(
+        key,
+        value
+    ) {
 
-        this.data.profile[key] = value;
+        if (!key) {
+            return false;
+        }
+
+
+        this.data.profile[key] =
+            value;
+
 
         this.save();
+
+
+        return true;
 
     },
 
 
     recall(key) {
 
-        return this.data.profile[key] ?? null;
+        if (!key) {
+            return null;
+        }
+
+
+        return (
+            this.data.profile[key] ??
+            null
+        );
 
     },
 
 
-    addMemory(text, importance = 1) {
+    addMemory(
+        text,
+        importance = 1
+    ) {
+
+        if (!text) {
+            return false;
+        }
+
 
         this.data.memories.push({
 
-            id: crypto.randomUUID(),
+            id:
+                this.createId(),
 
             text,
 
@@ -95,7 +166,29 @@ const Memory = {
 
         });
 
+
+        /*
+         * Hafızanın sonsuza kadar büyümesini
+         * önlemek için maksimum 500 kayıt.
+         */
+
+        if (
+            this.data.memories.length >
+            500
+        ) {
+
+            this.data.memories =
+                this.data.memories.slice(
+                    -500
+                );
+
+        }
+
+
         this.save();
+
+
+        return true;
 
     },
 
@@ -105,8 +198,12 @@ const Memory = {
         return [
             ...this.data.memories
         ].sort(
-            (a, b) =>
-                b.importance - a.importance
+            (
+                first,
+                second
+            ) =>
+                second.importance -
+                first.importance
         );
 
     },
@@ -117,7 +214,20 @@ const Memory = {
         text
     ) {
 
+        if (
+            !role ||
+            !text
+        ) {
+
+            return false;
+
+        }
+
+
         this.data.conversations.push({
+
+            id:
+                this.createId(),
 
             role,
 
@@ -128,27 +238,87 @@ const Memory = {
 
         });
 
-        // Hafızanın sonsuza kadar şişmesini
-        // önlemek için son 200 mesajı tutuyoruz.
+
+        /*
+         * Son 300 mesajı tut.
+         */
 
         if (
             this.data.conversations.length >
-            200
+            300
         ) {
 
             this.data.conversations =
-                this.data.conversations.slice(-200);
+                this.data.conversations.slice(
+                    -300
+                );
 
         }
+
+
+        this.save();
+
+
+        return true;
+
+    },
+
+
+    getRecentConversations(
+        count = 20
+    ) {
+
+        return this.data
+            .conversations
+            .slice(-count);
+
+    },
+
+
+    setPreference(
+        key,
+        value
+    ) {
+
+        if (!key) {
+            return false;
+        }
+
+
+        this.data.preferences[key] =
+            value;
+
+
+        this.save();
+
+
+        return true;
+
+    },
+
+
+    getPreference(key) {
+
+        return (
+            this.data.preferences[key] ??
+            null
+        );
+
+    },
+
+
+    clearConversations() {
+
+        this.data.conversations = [];
 
         this.save();
 
     },
 
 
-    clearConversation() {
+    clearMemories() {
 
-        this.data.conversations = [];
+        this.data.memories = [];
 
         this.save();
 
@@ -169,11 +339,65 @@ const Memory = {
 
         };
 
+
         this.save();
+
+    },
+
+
+    getStats() {
+
+        return {
+
+            memories:
+                this.data.memories.length,
+
+            conversations:
+                this.data.conversations.length,
+
+            profileItems:
+                Object.keys(
+                    this.data.profile
+                ).length,
+
+            preferences:
+                Object.keys(
+                    this.data.preferences
+                ).length
+
+        };
+
+    },
+
+
+    createId() {
+
+        if (
+            typeof crypto !== "undefined" &&
+            typeof crypto.randomUUID ===
+                "function"
+        ) {
+
+            return crypto.randomUUID();
+
+        }
+
+
+        return (
+            Date.now() +
+            "-" +
+            Math.random()
+                .toString(36)
+                .slice(2)
+        );
 
     }
 
 };
 
 
-Memory.load();
+/*
+ * Hafızayı başlat.
+ */
+
+Memory.init();
