@@ -20,11 +20,16 @@
         content="yes"
     >
 
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
+
     <title>JARVIS AI</title>
 
     <link
         rel="stylesheet"
-        href="style.css?v=4"
+        href="style.css?v=3"
     >
 
 </head>
@@ -55,7 +60,6 @@
     </header>
 
 
-
     <main>
 
 
@@ -63,9 +67,13 @@
 
             <div class="core">
 
-                <div class="core-ring ring-1"></div>
+                <div
+                    class="core-ring ring-1"
+                ></div>
 
-                <div class="core-ring ring-2"></div>
+                <div
+                    class="core-ring ring-2"
+                ></div>
 
                 <div class="core-center">
 
@@ -92,7 +100,6 @@
         </section>
 
 
-
         <section id="conversation">
 
             <div class="message jarvis">
@@ -113,7 +120,6 @@
             </div>
 
         </section>
-
 
 
         <section class="command-area">
@@ -151,7 +157,6 @@
     </main>
 
 
-
     <footer>
 
         <span>
@@ -163,7 +168,7 @@
 
         <span>
 
-            Türkçe • Yerel Core
+            Türkçe • AI Core
 
         </span>
 
@@ -173,13 +178,18 @@
 </div>
 
 
-<!-- JARVIS SİSTEMLERİ -->
+<!--
+    ÖNEMLİ:
+    Memory önce yükleniyor.
+    Daha sonra AI Core.
+    En son App.
+-->
 
-<script src="js/memory.js?v=4"></script>
+<script src="js/memory.js?v=3"></script>
 
-<script src="js/ai-core.js?v=4"></script>
+<script src="js/ai-core.js?v=3"></script>
 
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=3"></script>
 
 
 </body>
