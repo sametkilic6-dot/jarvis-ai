@@ -3,9 +3,7 @@
 const AI_CORE = {
 
     name: "JARVIS",
-
-    version: "6.0",
-
+    version: "7.0",
 
     async think(input) {
 
@@ -13,18 +11,13 @@ const AI_CORE = {
             String(input || "").trim();
 
         if (!text) {
-
             return {
-                response:
-                    "Dinliyorum Samet."
+                response: "Dinliyorum Samet."
             };
-
         }
-
 
         const lower =
             text.toLowerCase();
-
 
         const memoryAvailable =
             typeof Memory !== "undefined";
@@ -32,44 +25,21 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İSİM KAYDET
+         * SORU KONTROLÜ
          * =========================
+         *
+         * Soru cümleleri hiçbir zaman
+         * hafızaya kayıt olarak işlenmez.
          */
 
-        if (
-            lower.startsWith("benim adım") ||
-            lower.startsWith("ismim")
-        ) {
-
-            const name =
-                text
-                    .replace(/^benim adım/i, "")
-                    .replace(/^ismim/i, "")
-                    .trim();
-
-
-            if (name) {
-
-                if (memoryAvailable) {
-
-                    Memory.setName(name);
-
-                    Memory.addFact(
-                        "name",
-                        name
-                    );
-
-                }
-
-
-                return {
-                    response:
-                        `Tamam Samet. Adının ${name} olduğunu hafızama kaydettim.`
-                };
-
-            }
-
-        }
+        const isQuestion =
+            lower.includes("?") ||
+            lower.includes("ne") ||
+            lower.includes("nerede") ||
+            lower.includes("nasıl") ||
+            lower.includes("hangi") ||
+            lower.includes("kim") ||
+            lower.includes("kaç");
 
 
         /*
@@ -88,7 +58,6 @@ const AI_CORE = {
                 const name =
                     Memory.getName();
 
-
                 if (name) {
 
                     return {
@@ -100,10 +69,163 @@ const AI_CORE = {
 
             }
 
-
             return {
                 response:
                     "Adını henüz hafızamda bulamadım."
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * İSİM KAYDET
+         * =========================
+         */
+
+        if (
+            !isQuestion &&
+            (
+                lower.startsWith("benim adım") ||
+                lower.startsWith("ismim")
+            )
+        ) {
+
+            const name =
+                text
+                    .replace(/^benim adım/i, "")
+                    .replace(/^ismim/i, "")
+                    .trim();
+
+            if (name && memoryAvailable) {
+
+                Memory.setName(name);
+
+                Memory.addFact(
+                    "name",
+                    name
+                );
+
+                return {
+                    response:
+                        `Tamam Samet. Adının ${name} olduğunu hafızama kaydettim.`
+                };
+
+            }
+
+        }
+
+
+        /*
+         * =========================
+         * YAŞAM YERİ SORGULA
+         * =========================
+         */
+
+        if (
+            lower.includes("nerede yaşıyorum") ||
+            lower.includes("hangi şehirde yaşıyorum") ||
+            lower.includes("yaşadığım yer neresi")
+        ) {
+
+            if (memoryAvailable) {
+
+                const location =
+                    Memory.getFact("location");
+
+                if (location) {
+
+                    return {
+                        response:
+                            `${location} bölgesinde yaşadığını hatırlıyorum.`
+                    };
+
+                }
+
+            }
+
+            return {
+                response:
+                    "Yaşadığın yeri henüz hafızamda bulamıyorum."
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * YAŞAM YERİ KAYDET
+         * =========================
+         */
+
+        const locationMatch =
+            text.match(
+                /^(?:ben\s+)?(.+?)['’]?(?:de|da|te|ta)\s+yaşıyorum(?:[.!])?$/i
+            );
+
+
+        if (
+            !isQuestion &&
+            locationMatch
+        ) {
+
+            const location =
+                locationMatch[1].trim();
+
+            if (
+                location &&
+                location.length < 100 &&
+                memoryAvailable
+            ) {
+
+                Memory.addFact(
+                    "location",
+                    location
+                );
+
+                return {
+                    response:
+                        `Tamam. ${location} bölgesinde yaşadığını hafızama kaydettim.`
+                };
+
+            }
+
+        }
+
+
+        /*
+         * =========================
+         * FAVORİ RENK SORGULA
+         * =========================
+         */
+
+        if (
+            lower.includes("en sevdiğim renk ne") ||
+            lower.includes("sevdiğim renk ne") ||
+            lower.includes("favori rengim ne")
+        ) {
+
+            if (memoryAvailable) {
+
+                const color =
+                    Memory.getPreference(
+                        "favorite_color"
+                    );
+
+                if (color) {
+
+                    return {
+                        response:
+                            `En sevdiğin renk ${color}. Bunu hatırlıyorum.`
+                    };
+
+                }
+
+            }
+
+            return {
+                response:
+                    "En sevdiğin rengi henüz bilmiyorum."
             };
 
         }
@@ -116,7 +238,6 @@ const AI_CORE = {
          */
 
         const colors = [
-
             "mavi",
             "kırmızı",
             "yeşil",
@@ -126,11 +247,11 @@ const AI_CORE = {
             "mor",
             "turuncu",
             "pembe"
-
         ];
 
 
         if (
+            !isQuestion &&
             (
                 lower.includes("en sevdiğim renk") ||
                 lower.includes("favori rengim")
@@ -147,7 +268,6 @@ const AI_CORE = {
                         lower.includes(color)
                 );
 
-
             if (memoryAvailable) {
 
                 Memory.addPreference(
@@ -156,7 +276,6 @@ const AI_CORE = {
                 );
 
             }
-
 
             return {
                 response:
@@ -168,97 +287,17 @@ const AI_CORE = {
 
         /*
          * =========================
-         * FAVORİ RENK SORGULA
+         * İŞLETME KAYDET
          * =========================
          */
 
         if (
-            lower.includes("en sevdiğim renk") ||
-            lower.includes("sevdiğim renk ne") ||
-            lower.includes("favori rengim ne")
-        ) {
-
-            if (memoryAvailable) {
-
-                const color =
-                    Memory.getPreference(
-                        "favorite_color"
-                    );
-
-
-                if (color) {
-
-                    return {
-                        response:
-                            `En sevdiğin renk ${color}. Bunu hatırlıyorum.`
-                    };
-
-                }
-
-            }
-
-
-            return {
-                response:
-                    "En sevdiğin rengi henüz bilmiyorum."
-            };
-
-        }
-
-
-        /*
-         * =========================
-         * İZMİR / YAŞAM YERİ
-         * =========================
-         */
-
-        const locationMatch =
-            text.match(
-                /(?:ben\s+)?(.+?)['’]?(?:de|da|te|ta)\s+yaşıyorum/i
-            );
-
-
-        if (
-            locationMatch
-        ) {
-
-            const location =
-                locationMatch[1]
-                    .trim();
-
-
-            if (
-                location &&
-                location.length < 100 &&
-                memoryAvailable
-            ) {
-
-                Memory.addFact(
-                    "location",
-                    location
-                );
-
-            }
-
-
-            return {
-                response:
-                    `Tamam. ${location} bölgesinde yaşadığını hafızama kaydettim.`
-            };
-
-        }
-
-
-        /*
-         * =========================
-         * İŞLETME
-         * =========================
-         */
-
-        if (
-            lower.includes("playstation salonu işletiyorum") ||
-            lower.includes("playstation salonum var") ||
-            lower.includes("ps salonu işletiyorum")
+            !isQuestion &&
+            (
+                lower.includes("playstation salonu işletiyorum") ||
+                lower.includes("playstation salonum var") ||
+                lower.includes("ps salonu işletiyorum")
+            )
         ) {
 
             if (memoryAvailable) {
@@ -269,7 +308,6 @@ const AI_CORE = {
                 );
 
             }
-
 
             return {
                 response:
@@ -293,10 +331,7 @@ const AI_CORE = {
             if (memoryAvailable) {
 
                 const business =
-                    Memory.getFact(
-                        "business"
-                    );
-
+                    Memory.getFact("business");
 
                 if (business) {
 
@@ -309,80 +344,9 @@ const AI_CORE = {
 
             }
 
-
             return {
                 response:
                     "İşletmen hakkında henüz kayıtlı bir bilgim yok."
-            };
-
-        }
-
-
-        /*
-         * =========================
-         * YAŞADIĞI YERİ SOR
-         * =========================
-         */
-
-        if (
-            lower.includes("nerede yaşıyorum") ||
-            lower.includes("hangi şehirde yaşıyorum") ||
-            lower.includes("yaşadığım yer neresi")
-        ) {
-
-            if (memoryAvailable) {
-
-                const location =
-                    Memory.getFact(
-                        "location"
-                    );
-
-
-                if (location) {
-
-                    return {
-                        response:
-                            `${location} bölgesinde yaşadığını hatırlıyorum.`
-                    };
-
-                }
-
-            }
-
-
-            return {
-                response:
-                    "Yaşadığın yeri henüz hafızamda bulamıyorum."
-            };
-
-        }
-
-
-        /*
-         * =========================
-         * HATIRLA
-         * =========================
-         */
-
-        if (
-            lower.includes("hatırla") ||
-            lower.includes("unutma")
-        ) {
-
-            if (memoryAvailable) {
-
-                Memory.addFact(
-                    "user_note_" +
-                    Date.now(),
-                    text
-                );
-
-            }
-
-
-            return {
-                response:
-                    "Tamam. Bunu hafızama kaydettim."
             };
 
         }
@@ -403,6 +367,8 @@ const AI_CORE = {
 
             if (memoryAvailable) {
 
+                const facts = [];
+
                 const name =
                     Memory.getName();
 
@@ -411,18 +377,15 @@ const AI_CORE = {
                         "favorite_color"
                     );
 
-                const business =
-                    Memory.getFact(
-                        "business"
-                    );
-
                 const location =
                     Memory.getFact(
                         "location"
                     );
 
-
-                const facts = [];
+                const business =
+                    Memory.getFact(
+                        "business"
+                    );
 
 
                 if (name) {
@@ -433,7 +396,6 @@ const AI_CORE = {
 
                 }
 
-
                 if (color) {
 
                     facts.push(
@@ -442,7 +404,6 @@ const AI_CORE = {
 
                 }
 
-
                 if (location) {
 
                     facts.push(
@@ -450,7 +411,6 @@ const AI_CORE = {
                     );
 
                 }
-
 
                 if (business) {
 
@@ -478,10 +438,28 @@ const AI_CORE = {
 
             }
 
-
             return {
                 response:
                     "Henüz senin hakkında yeterli kayıt yok."
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * HATIRLA
+         * =========================
+         */
+
+        if (
+            lower.includes("hatırla") ||
+            lower.includes("unutma")
+        ) {
+
+            return {
+                response:
+                    "Bunu doğrudan bir bilgi olarak anlayamadım. Bilgiyi açıkça söyle, örneğin: Ben İzmir'de yaşıyorum."
             };
 
         }
@@ -544,7 +522,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * GENEL
+         * GENEL CEVAP
          * =========================
          */
 
@@ -559,5 +537,5 @@ const AI_CORE = {
 
 
 console.log(
-    "🤖 JARVIS AI Core v6.0 aktif."
+    "🤖 JARVIS AI Core v7.0 aktif."
 );
