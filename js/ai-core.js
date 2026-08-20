@@ -3,16 +3,12 @@
 const AI_CORE = {
 
     engine: null,
-
     initialized: false,
-
     loading: false,
-
     modelLoaded: false,
 
     model:
         "Llama-3.2-1B-Instruct-q4f16_1-MLC",
-
 
     async init() {
 
@@ -27,62 +23,144 @@ const AI_CORE = {
         this.loading = true;
 
         this.updateStatus(
-            "Yerel AI hazırlanıyor..."
+            "JARVIS cihazı kontrol ediyor..."
         );
 
         try {
+
+            /*
+             * 1. WebGPU kontrolü
+             */
+
+            if (!navigator.gpu) {
+
+                throw new Error(
+                    "WebGPU bu tarayıcıda bulunamadı."
+                );
+
+            }
+
+            this.updateStatus(
+                "WebGPU bulundu. AI motoru hazırlanıyor..."
+            );
+
+
+            /*
+             * 2. GPU adapter kontrolü
+             */
+
+            const adapter =
+                await navigator.gpu.requestAdapter();
+
+
+            if (!adapter) {
+
+                throw new Error(
+                    "GPU adapter oluşturulamadı."
+                );
+
+            }
+
+
+            /*
+             * 3. WebLLM yükle
+             */
+
+            this.updateStatus(
+                "WebLLM yükleniyor..."
+            );
+
 
             const webllm =
                 await import(
                     "https://esm.run/@mlc-ai/web-llm"
                 );
 
+
+            /*
+             * 4. Modeli başlat
+             */
+
+            this.updateStatus(
+                "Yerel AI modeli başlatılıyor..."
+            );
+
+
             this.engine =
                 await webllm.CreateMLCEngine(
                     this.model,
                     {
+
                         initProgressCallback:
                             progress => {
+
                                 this.handleProgress(
                                     progress
                                 );
+
                             }
+
                     }
                 );
 
-            this.initialized = true;
-            this.modelLoaded = true;
-            this.loading = false;
+
+            this.initialized =
+                true;
+
+            this.modelLoaded =
+                true;
+
+            this.loading =
+                false;
+
 
             this.updateStatus(
                 "JARVIS çevrimiçi."
             );
 
             this.updateModelStatus(
-                "Yerel AI aktif"
+                "Yerel AI aktif."
             );
+
 
             return true;
 
+
         } catch (error) {
 
+            this.loading =
+                false;
+
+
+            const message =
+                error?.message ||
+                String(error);
+
+
             console.error(
-                "WebLLM başlatma hatası:",
+                "JARVIS AI ERROR:",
                 error
             );
 
-            this.loading = false;
+
+            /*
+             * Gerçek hatayı ekranda göster.
+             */
 
             this.updateStatus(
-                "Yerel AI başlatılamadı."
+                "AI başlatılamadı."
             );
+
 
             this.updateModelStatus(
-                "AI modeli başlatılamadı."
+                "HATA: " + message
             );
 
+
             return false;
+
         }
+
     },
 
 
@@ -94,10 +172,14 @@ const AI_CORE = {
         ) {
 
             return {
+
                 success: false,
+
                 response:
                     "Komut algılanamadı."
+
             };
+
         }
 
 
@@ -106,14 +188,21 @@ const AI_CORE = {
             const ready =
                 await this.init();
 
+
             if (!ready) {
 
                 return {
+
                     success: false,
+
                     response:
-                        "Yerel AI modeli başlatılamadı."
+                        "Yerel AI başlatılamadı. " +
+                        "Ekrandaki hata mesajını kontrol et."
+
                 };
+
             }
+
         }
 
 
@@ -128,9 +217,11 @@ const AI_CORE = {
             ) {
 
                 const recent =
-                    Memory.getRecentConversations(
-                        10
-                    );
+                    Memory
+                        .getRecentConversations(
+                            10
+                        );
+
 
                 context =
                     recent
@@ -139,26 +230,29 @@ const AI_CORE = {
                                 `${message.role}: ${message.text}`
                         )
                         .join("\n");
+
             }
 
 
             const systemPrompt = `
+
 Sen JARVIS'sin.
 
 Kullanıcı Samet.
 
 Her zaman Türkçe konuş.
 
-Doğal, anlaşılır ve doğru cevaplar ver.
+Doğal ve anlaşılır cevaplar ver.
 
 Bilmediğin bilgileri uydurma.
 
-Kritik sistem işlemleri için
-kullanıcı onayı gerekir.
+Kritik işlemler için Samet'in
+onayı gerekir.
 
 Önceki konuşmalar:
 
 ${context}
+
 `;
 
 
@@ -176,6 +270,7 @@ ${context}
 
                                 content:
                                     systemPrompt
+
                             },
 
                             {
@@ -184,6 +279,7 @@ ${context}
 
                                 content:
                                     input
+
                             }
 
                         ],
@@ -193,6 +289,7 @@ ${context}
 
                         max_tokens:
                             512
+
                     });
 
 
@@ -204,21 +301,13 @@ ${context}
                     ?.trim();
 
 
-            if (!response) {
-
-                return {
-                    success: false,
-                    response:
-                        "AI cevap oluşturamadı."
-                };
-            }
-
-
             return {
 
                 success: true,
 
-                response
+                response:
+                    response ||
+                    "AI boş cevap döndürdü."
 
             };
 
@@ -226,16 +315,21 @@ ${context}
         } catch (error) {
 
             console.error(
-                "JARVIS AI hatası:",
+                "JARVIS cevap hatası:",
                 error
             );
+
 
             return {
 
                 success: false,
 
                 response:
-                    "Yerel AI çalışırken hata oluştu."
+                    "AI cevap oluştururken hata oluştu: " +
+                    (
+                        error?.message ||
+                        "Bilinmeyen hata"
+                    )
 
             };
 
@@ -257,10 +351,10 @@ ${context}
 
         const text =
             percent !== null
-                ? `AI modeli hazırlanıyor: ${percent}%`
+                ? `Model hazırlanıyor: ${percent}%`
                 : (
                     progress?.text ||
-                    "AI modeli hazırlanıyor..."
+                    "Model hazırlanıyor..."
                 );
 
 
@@ -282,6 +376,7 @@ ${context}
 
             element.textContent =
                 text;
+
         }
 
     },
@@ -294,10 +389,12 @@ ${context}
                 "system-status"
             );
 
+
         if (element) {
 
             element.textContent =
                 text;
+
         }
 
     },
@@ -310,10 +407,12 @@ ${context}
                 "model-status"
             );
 
+
         if (element) {
 
             element.textContent =
                 text;
+
         }
 
     }
@@ -322,5 +421,5 @@ ${context}
 
 
 console.log(
-    "JARVIS LOCAL AI CORE yüklendi."
+    "JARVIS DIAGNOSTIC AI CORE yüklendi."
 );
