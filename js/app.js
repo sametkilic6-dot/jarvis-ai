@@ -2,23 +2,40 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const input = document.getElementById("command");
-    const send = document.getElementById("send");
-    const conversation = document.getElementById("conversation");
+    const input =
+        document.getElementById("command");
+
+    const send =
+        document.getElementById("send");
+
+    const conversation =
+        document.getElementById("conversation");
+
 
     if (!input || !send || !conversation) {
-        console.error("JARVIS: Arayüz elemanları bulunamadı.");
+
+        console.error(
+            "JARVIS: Arayüz elemanları bulunamadı."
+        );
+
         return;
     }
 
 
+    const WORKER_URL =
+        "https://jarvis-ai.agitacer6.workers.dev/";
+
+
     function addMessage(text, sender) {
 
-        const message = document.createElement("div");
+        const message =
+            document.createElement("div");
 
         message.classList.add(
             "message",
-            sender === "user" ? "user" : "jarvis"
+            sender === "user"
+                ? "user"
+                : "jarvis"
         );
 
 
@@ -27,9 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const name =
                 document.createElement("div");
 
-            name.className = "message-name";
+            name.className =
+                "message-name";
 
-            name.textContent = "JARVIS";
+            name.textContent =
+                "JARVIS";
 
             message.appendChild(name);
         }
@@ -38,7 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const content =
             document.createElement("div");
 
-        content.textContent = text;
+        content.textContent =
+            text;
 
         message.appendChild(content);
 
@@ -61,51 +81,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
         input.value = "";
 
-
-        // Kullanıcı mesajını ekrana yaz
-        addMessage(text, "user");
-
-
-        // Kullanıcı mesajını hafızaya kaydet
-        if (typeof Memory !== "undefined") {
-
-            Memory.add(
-                "user",
-                text
-            );
-
-        }
+        addMessage(
+            text,
+            "user"
+        );
 
 
         try {
 
-            const result =
-                await AI_CORE.think(text);
-
-
             const response =
-                result &&
-                result.response
-                    ? result.response
-                    : "Şu anda cevap oluşturamadım.";
+                await fetch(
+                    WORKER_URL,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            message: text
+                        })
+                    }
+                );
 
 
-            // JARVIS cevabını ekrana yaz
-            addMessage(
-                response,
-                "jarvis"
-            );
+            const result =
+                await response.json();
 
 
-            // JARVIS cevabını hafızaya kaydet
-            if (typeof Memory !== "undefined") {
+            if (!response.ok) {
 
-                Memory.add(
-                    "jarvis",
-                    response
+                throw new Error(
+                    result.error ||
+                    "Worker hata verdi."
                 );
 
             }
+
+
+            addMessage(
+                result.response ||
+                "JARVIS cevap vermedi.",
+                "jarvis"
+            );
 
 
         } catch (error) {
@@ -116,25 +136,11 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-            const errorMessage =
-                "Bir hata oluştu: " +
-                error.message;
-
-
             addMessage(
-                errorMessage,
+                "Bağlantı hatası: " +
+                error.message,
                 "jarvis"
             );
-
-
-            if (typeof Memory !== "undefined") {
-
-                Memory.add(
-                    "jarvis",
-                    errorMessage
-                );
-
-            }
 
         }
 
@@ -160,11 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
         }
-    );
-
-
-    console.log(
-        "🤖 JARVIS uygulaması hazır."
     );
 
 });
