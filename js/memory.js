@@ -2,14 +2,22 @@
 
 const Memory = {
 
-    key: "jarvis_memory_v2",
+    key: "jarvis_memory_v3",
 
     data: [],
 
     profile: {
+
         name: null,
+
         preferences: {},
-        facts: {}
+
+        facts: {},
+
+        personal: {},
+
+        goals: {}
+
     },
 
 
@@ -34,9 +42,17 @@ const Memory = {
 
                     this.profile =
                         parsed.profile || {
+
                             name: null,
+
                             preferences: {},
-                            facts: {}
+
+                            facts: {},
+
+                            personal: {},
+
+                            goals: {}
+
                         };
 
                 }
@@ -101,7 +117,8 @@ const Memory = {
 
             role: role,
 
-            text: String(text).trim(),
+            text:
+                String(text).trim(),
 
             timestamp:
                 new Date().toISOString()
@@ -132,7 +149,7 @@ const Memory = {
 
 
         this.profile.facts[key] =
-            value;
+            String(value).trim();
 
 
         this.save();
@@ -167,7 +184,7 @@ const Memory = {
 
 
         this.profile.preferences[key] =
-            value;
+            String(value).trim();
 
 
         this.save();
@@ -186,6 +203,76 @@ const Memory = {
 
         return (
             this.profile.preferences[key]
+            || null
+        );
+
+    },
+
+
+    addPersonal(key, value) {
+
+        if (!key || !value) {
+
+            return;
+
+        }
+
+
+        this.profile.personal[key] =
+            String(value).trim();
+
+
+        this.save();
+
+    },
+
+
+    getPersonal(key) {
+
+        if (!key) {
+
+            return null;
+
+        }
+
+
+        return (
+            this.profile.personal[key]
+            || null
+        );
+
+    },
+
+
+    addGoal(key, value) {
+
+        if (!key || !value) {
+
+            return;
+
+        }
+
+
+        this.profile.goals[key] =
+            String(value).trim();
+
+
+        this.save();
+
+    },
+
+
+    getGoal(key) {
+
+        if (!key) {
+
+            return null;
+
+        }
+
+
+        return (
+            this.profile.goals[key]
             || null
         );
 
@@ -237,12 +324,11 @@ const Memory = {
             String(query).toLowerCase();
 
 
-        return this.data.filter(item =>
-
-            item.text
-                .toLowerCase()
-                .includes(text)
-
+        return this.data.filter(
+            item =>
+                item.text
+                    .toLowerCase()
+                    .includes(text)
         );
 
     },
@@ -261,6 +347,24 @@ const Memory = {
 
         return {
             ...this.profile.preferences
+        };
+
+    },
+
+
+    allPersonal() {
+
+        return {
+            ...this.profile.personal
+        };
+
+    },
+
+
+    allGoals() {
+
+        return {
+            ...this.profile.goals
         };
 
     },
@@ -285,9 +389,14 @@ const Memory = {
 
             preferences: {},
 
-            facts: {}
+            facts: {},
+
+            personal: {},
+
+            goals: {}
 
         };
+
 
         this.save();
 
@@ -307,5 +416,5 @@ Memory.init();
 
 
 console.log(
-    "🧠 JARVIS Memory v2 aktif."
+    "🧠 JARVIS Memory v3 aktif."
 );
