@@ -1,15 +1,5 @@
 "use strict";
 
-/*
- * JARVIS LOCAL AI CORE
- *
- * WebLLM ile modeli doğrudan tarayıcıda çalıştırır.
- *
- * API KEY YOK
- * Sunucu YOK
- * İstek başına ücret YOK
- */
-
 const AI_CORE = {
 
     engine: null,
@@ -20,13 +10,6 @@ const AI_CORE = {
 
     modelLoaded: false,
 
-    /*
-     * İlk test için nispeten küçük model.
-     *
-     * Model seçimini daha sonra cihazın
-     * gücüne göre otomatikleştireceğiz.
-     */
-
     model:
         "Llama-3.2-1B-Instruct-q4f16_1-MLC",
 
@@ -34,87 +17,52 @@ const AI_CORE = {
     async init() {
 
         if (this.initialized) {
-
             return true;
-
         }
-
 
         if (this.loading) {
-
             return false;
-
         }
 
-
         this.loading = true;
-
 
         this.updateStatus(
             "Yerel AI hazırlanıyor..."
         );
 
-
         try {
-
-            /*
-             * WebLLM'i doğrudan module olarak yükle.
-             */
 
             const webllm =
                 await import(
                     "https://esm.run/@mlc-ai/web-llm"
                 );
 
-
-            /*
-             * Engine oluştur.
-             */
-
             this.engine =
                 await webllm.CreateMLCEngine(
                     this.model,
                     {
-
                         initProgressCallback:
-                            progress =>
+                            progress => {
                                 this.handleProgress(
                                     progress
-                                )
-
+                                );
+                            }
                     }
                 );
 
-
-            this.initialized =
-                true;
-
-
-            this.modelLoaded =
-                true;
-
-
-            this.loading =
-                false;
-
+            this.initialized = true;
+            this.modelLoaded = true;
+            this.loading = false;
 
             this.updateStatus(
                 "JARVIS çevrimiçi."
             );
 
-
             this.updateModelStatus(
                 "Yerel AI aktif"
             );
 
-
-            console.log(
-                "JARVIS Local AI hazır."
-            );
-
-
             return true;
-
 
         } catch (error) {
 
@@ -123,25 +71,18 @@ const AI_CORE = {
                 error
             );
 
-
-            this.loading =
-                false;
-
+            this.loading = false;
 
             this.updateStatus(
                 "Yerel AI başlatılamadı."
             );
 
-
             this.updateModelStatus(
-                "AI modeli bu cihazda çalıştırılamadı."
+                "AI modeli başlatılamadı."
             );
 
-
             return false;
-
         }
-
     },
 
 
@@ -153,48 +94,30 @@ const AI_CORE = {
         ) {
 
             return {
-
                 success: false,
-
                 response:
                     "Komut algılanamadı."
-
             };
-
         }
 
-
-        /*
-         * Model henüz yüklenmediyse başlat.
-         */
 
         if (!this.modelLoaded) {
 
             const ready =
                 await this.init();
 
-
             if (!ready) {
 
                 return {
-
                     success: false,
-
                     response:
                         "Yerel AI modeli başlatılamadı."
-
                 };
-
             }
-
         }
 
 
         try {
-
-            /*
-             * Hafızadan yakın konuşmaları al.
-             */
 
             let context = "";
 
@@ -205,112 +128,89 @@ const AI_CORE = {
             ) {
 
                 const recent =
-                    Memory
-                        .getRecentConversations(
-                            10
-                        );
+                    Memory.getRecentConversations(
+                        10
+                    );
 
-
-                if (
-                    recent.length
-                ) {
-
-                    context =
-                        recent
-                            .map(
-                                message =>
-                                    `${message.role}: ${message.text}`
-                            )
-                            .join("\n");
-
-                }
-
+                context =
+                    recent
+                        .map(
+                            message =>
+                                `${message.role}: ${message.text}`
+                        )
+                        .join("\n");
             }
 
 
             const systemPrompt = `
-
 Sen JARVIS'sin.
 
-Kullanıcı: Samet.
+Kullanıcı Samet.
 
-Türkçe konuş.
+Her zaman Türkçe konuş.
 
-Kısa, doğal ve anlaşılır cevaplar ver.
-
-Kendini JARVIS olarak tanıt.
+Doğal, anlaşılır ve doğru cevaplar ver.
 
 Bilmediğin bilgileri uydurma.
 
-Kritik sistem işlemlerini kullanıcı
-onayı olmadan gerçekleştirme.
+Kritik sistem işlemleri için
+kullanıcı onayı gerekir.
 
-Kullanıcı senden kod veya sistem
-değişikliği istediğinde önce ne
-yapacağını açıkla.
-
-Önceki konuşma bağlamı:
+Önceki konuşmalar:
 
 ${context}
-
 `;
 
 
+            const result =
+                await this.engine
+                    .chat
+                    .completions
+                    .create({
+
+                        messages: [
+
+                            {
+                                role:
+                                    "system",
+
+                                content:
+                                    systemPrompt
+                            },
+
+                            {
+                                role:
+                                    "user",
+
+                                content:
+                                    input
+                            }
+
+                        ],
+
+                        temperature:
+                            0.7,
+
+                        max_tokens:
+                            512
+                    });
+
+
             const response =
-                await this.engine.chat.completions.create({
-
-                    messages: [
-
-                        {
-
-                            role:
-                                "system",
-
-                            content:
-                                systemPrompt
-
-                        },
-
-                        {
-
-                            role:
-                                "user",
-
-                            content:
-                                input
-
-                        }
-
-                    ],
-
-                    temperature:
-                        0.7,
-
-                    max_tokens:
-                        512
-
-                });
-
-
-            const text =
-                response
+                result
                     ?.choices?.[0]
                     ?.message
                     ?.content
                     ?.trim();
 
 
-            if (!text) {
+            if (!response) {
 
                 return {
-
                     success: false,
-
                     response:
                         "AI cevap oluşturamadı."
-
                 };
-
             }
 
 
@@ -318,8 +218,7 @@ ${context}
 
                 success: true,
 
-                response:
-                    text
+                response
 
             };
 
@@ -331,13 +230,12 @@ ${context}
                 error
             );
 
-
             return {
 
                 success: false,
 
                 response:
-                    "Yerel AI çalışırken bir hata oluştu."
+                    "Yerel AI çalışırken hata oluştu."
 
             };
 
@@ -348,51 +246,42 @@ ${context}
 
     handleProgress(progress) {
 
-        const value =
-            progress?.progress;
-
-
-        const text =
-            progress?.text;
-
-
         const percent =
-            typeof value === "number"
+            typeof progress?.progress ===
+            "number"
                 ? Math.round(
-                    value * 100
+                    progress.progress * 100
                 )
                 : null;
 
 
-        const message =
+        const text =
             percent !== null
                 ? `AI modeli hazırlanıyor: ${percent}%`
                 : (
-                    text ||
+                    progress?.text ||
                     "AI modeli hazırlanıyor..."
                 );
 
 
         this.updateModelStatus(
-            message
+            text
         );
 
 
-        const progressElement =
+        const element =
             document.getElementById(
                 "model-progress"
             );
 
 
-        if (progressElement) {
+        if (element) {
 
-            progressElement.style.display =
+            element.style.display =
                 "block";
 
-
-            progressElement.textContent =
-                message;
-
+            element.textContent =
+                text;
         }
 
     },
@@ -405,12 +294,10 @@ ${context}
                 "system-status"
             );
 
-
         if (element) {
 
             element.textContent =
                 text;
-
         }
 
     },
@@ -423,12 +310,10 @@ ${context}
                 "model-status"
             );
 
-
         if (element) {
 
             element.textContent =
                 text;
-
         }
 
     }
@@ -436,14 +321,6 @@ ${context}
 };
 
 
-/*
- * Sayfa açıldığında AI modelini
- * otomatik indirmiyoruz.
- *
- * Kullanıcı ilk mesajı gönderdiğinde
- * model başlatılacak.
- */
-
 console.log(
-    "JARVIS Local AI Core yüklendi."
+    "JARVIS LOCAL AI CORE yüklendi."
 );
