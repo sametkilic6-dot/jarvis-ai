@@ -6,13 +6,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const send = document.getElementById("send");
     const conversation = document.getElementById("conversation");
 
-    if (!input || !send || !conversation) {
-        console.error("JARVIS: Arayüz elemanları bulunamadı.");
-        return;
-    }
-
     const WORKER_URL =
         "https://jarvis-ai.agitacer6.workers.dev/";
+
+
+    if (!input || !send || !conversation) {
+
+        console.error(
+            "JARVIS: Arayüz elemanları bulunamadı."
+        );
+
+        return;
+    }
 
 
     function addMessage(text, sender) {
@@ -40,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "JARVIS";
 
             message.appendChild(name);
+
         }
 
 
@@ -55,12 +61,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         conversation.scrollTop =
             conversation.scrollHeight;
+
     }
 
-
-    /*
-     * GERÇEK MEMORY
-     */
 
     function getMemory() {
 
@@ -68,16 +71,18 @@ document.addEventListener("DOMContentLoaded", () => {
             typeof Memory === "undefined"
         ) {
 
-            console.error(
-                "JARVIS: Memory bulunamadı."
-            );
-
             return {
+
                 name: null,
+
                 facts: {},
+
                 preferences: {},
+
                 recent: []
+
             };
+
         }
 
 
@@ -96,14 +101,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 Memory.recent(10)
 
         };
+
     }
 
 
-    /*
-     * HAFIZA SORUSU MU?
-     */
-
-    function isMemoryQuestion(text) {
+    function isMemorySummary(text) {
 
         const t =
             text
@@ -119,27 +121,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return (
 
-            t.includes("benim hakkimda") ||
+            t.includes("benim hakkimda ne biliyorsun") ||
 
-            t.includes("beni taniyor") ||
+            t.includes("benim hakkimda neler biliyorsun") ||
+
+            t.includes("benim bilgilerim neler") ||
 
             t.includes("hafizamda ne var") ||
 
             t.includes("hafizamda neler var") ||
 
-            t.includes("benim bilgilerim") ||
+            t.includes("benimle ilgili ne biliyorsun") ||
 
-            t.includes("benimle ilgili ne biliyorsun")
+            t.includes("beni taniyor musun")
 
         );
+
     }
 
 
-    /*
-     * MEMORY'Yİ DOĞRUDAN OKU
-     */
-
-    function memoryAnswer(memory) {
+    function createMemorySummary(memory) {
 
         const lines = [];
 
@@ -154,44 +155,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        const facts =
-            Object.entries(
-                memory.facts || {}
-            );
+        Object.entries(
+            memory.facts || {}
+        ).forEach(
+            ([key, value]) => {
+
+                lines.push(
+                    key +
+                    ": " +
+                    value
+                );
+
+            }
+        );
 
 
-        for (
-            const [key, value]
-            of facts
-        ) {
+        Object.entries(
+            memory.preferences || {}
+        ).forEach(
+            ([key, value]) => {
 
-            lines.push(
-                key +
-                ": " +
-                value
-            );
+                lines.push(
+                    key +
+                    ": " +
+                    value
+                );
 
-        }
-
-
-        const preferences =
-            Object.entries(
-                memory.preferences || {}
-            );
-
-
-        for (
-            const [key, value]
-            of preferences
-        ) {
-
-            lines.push(
-                key +
-                ": " +
-                value
-            );
-
-        }
+            }
+        );
 
 
         if (!lines.length) {
@@ -205,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         return (
-            "Hafızamda bulunan bilgiler:\n\n" +
+            "Hafızamda bulunan gerçek bilgiler:\n\n" +
             lines
                 .map(
                     item => "• " + item
@@ -216,10 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    /*
-     * MESAJ GÖNDER
-     */
-
     async function sendMessage() {
 
         const text =
@@ -227,7 +214,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (!text) {
+
             return;
+
         }
 
 
@@ -242,21 +231,98 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
 
+            /*
+             * 1. ÖNCE YEREL AI CORE
+             *
+             * İsim, favori renk gibi
+             * hafıza işlemleri burada yapılır.
+             */
+
+            if (
+                typeof AI_CORE !== "undefined" &&
+                typeof AI_CORE.think === "function"
+            ) {
+
+                const localResult =
+                    await AI_CORE.think(text);
+
+
+                /*
+                 * AI Core gerçekten
+                 * özel bir cevap ürettiyse
+                 * doğrudan kullan.
+                 */
+
+                if (
+                    localResult &&
+                    localResult.response
+                ) {
+
+                    const lower =
+                        text.toLowerCase();
+
+
+                    const isKnownCommand =
+                        lower.includes("benim adım") ||
+                        lower.includes("ismim") ||
+                        lower.includes("en sevdiğim renk") ||
+                        lower.includes("sevdiğim renk ne") ||
+                        lower.includes("benim adım ne") ||
+                        lower.includes("ismim ne");
+
+
+                    if (isKnownCommand) {
+
+                        addMessage(
+                            localResult.response,
+                            "jarvis"
+                        );
+
+
+                        if (
+                            typeof Memory !==
+                            "undefined"
+                        ) {
+
+                            Memory.add(
+                                "user",
+                                text
+                            );
+
+                            Memory.add(
+                                "jarvis",
+                                localResult.response
+                            );
+
+                        }
+
+
+                        return;
+
+                    }
+
+                }
+
+            }
+
+
+            /*
+             * 2. HAFIZA ÖZETİ
+             *
+             * Bu soru AI'ya gitmez.
+             * Sadece gerçek Memory okunur.
+             */
+
             const memory =
                 getMemory();
 
 
-            /*
-             * GENİŞ HAFIZA SORUSU
-             * AI'YA GİTMEZ.
-             */
-
             if (
-                isMemoryQuestion(text)
+                isMemorySummary(text)
             ) {
 
                 const answer =
-                    memoryAnswer(
+                    createMemorySummary(
                         memory
                     );
 
@@ -286,11 +352,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
                 return;
+
             }
 
 
             /*
-             * NORMAL AI SORUSU
+             * 3. NORMAL MESAJ
+             *
+             * Cloudflare Workers AI
              */
 
             const response =
@@ -298,7 +367,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     WORKER_URL,
                     {
 
-                        method: "POST",
+                        method:
+                            "POST",
 
                         headers: {
 
@@ -314,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     text,
 
                                 memory:
-                                    memory
+                                    getMemory()
 
                             })
 
@@ -403,6 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 sendMessage();
 
             }
+
         }
     );
 
