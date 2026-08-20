@@ -1,87 +1,120 @@
 "use strict";
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+document.addEventListener("DOMContentLoaded", () => {
 
-        const input =
-            document.getElementById(
-                "command"
-            );
+    const input = document.getElementById("command");
+    const send = document.getElementById("send");
+    const conversation = document.getElementById("conversation");
 
-        const button =
-            document.getElementById(
-                "send"
-            );
-
-        const conversation =
-            document.getElementById(
-                "conversation"
-            );
+    if (!input || !send || !conversation) {
+        console.error("JARVIS: Arayüz elemanları bulunamadı.");
+        return;
+    }
 
 
-        button.addEventListener(
-            "click",
-            async () => {
+    function addMessage(text, sender) {
 
-                const text =
-                    input.value.trim();
+        const message = document.createElement("div");
 
-                if (!text) return;
-
-                input.value = "";
-
-                addMessage(
-                    "Sen: " + text
-                );
-
-
-                const result =
-                    await AI_CORE.think(
-                        text
-                    );
-
-
-                addMessage(
-                    "JARVIS: " +
-                    result.response
-                );
-
-            }
+        message.classList.add(
+            "message",
+            sender === "user"
+                ? "user"
+                : "jarvis"
         );
 
 
-        input.addEventListener(
-            "keydown",
-            event => {
+        if (sender !== "user") {
 
-                if (
-                    event.key === "Enter"
-                ) {
+            const name =
+                document.createElement("div");
 
-                    button.click();
+            name.className = "message-name";
 
-                }
+            name.textContent = "JARVIS";
 
-            }
-        );
-
-
-        function addMessage(text) {
-
-            const message =
-                document.createElement(
-                    "p"
-                );
-
-            message.textContent =
-                text;
-
-            conversation.appendChild(
-                message
-            );
-
+            message.appendChild(name);
         }
 
+
+        const content =
+            document.createElement("div");
+
+        content.textContent = text;
+
+        message.appendChild(content);
+
+        conversation.appendChild(message);
+
+        conversation.scrollTop =
+            conversation.scrollHeight;
     }
-);
+
+
+    async function sendMessage() {
+
+        const text =
+            input.value.trim();
+
+        if (!text) {
+            return;
+        }
+
+
+        input.value = "";
+
+        addMessage(
+            text,
+            "user"
+        );
+
+
+        try {
+
+            const result =
+                await AI_CORE.think(text);
+
+
+            addMessage(
+                result.response,
+                "jarvis"
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "JARVIS ERROR:",
+                error
+            );
+
+
+            addMessage(
+                "Bir hata oluştu: " +
+                error.message,
+                "jarvis"
+            );
+        }
+    }
+
+
+    send.addEventListener(
+        "click",
+        sendMessage
+    );
+
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                sendMessage();
+            }
+        }
+    );
+
+});
