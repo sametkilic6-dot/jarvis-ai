@@ -3,22 +3,27 @@
 const AI_CORE = {
 
     name: "JARVIS",
-
-    version: "4.0",
+    version: "5.0",
 
 
     async think(input) {
 
-        const text = String(input || "").trim();
+        const text =
+            String(input || "").trim();
 
         if (!text) {
+
             return {
-                response: "Dinliyorum Samet."
+                response:
+                    "Dinliyorum Samet."
             };
+
         }
 
 
-        const lower = text.toLowerCase();
+        const lower =
+            text.toLowerCase();
+
 
         const memoryAvailable =
             typeof Memory !== "undefined";
@@ -26,7 +31,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İSİM
+         * İSİM KAYDET
          * =========================
          */
 
@@ -41,6 +46,7 @@ const AI_CORE = {
                     .replace(/^ismim/i, "")
                     .trim();
 
+
             if (name) {
 
                 if (memoryAvailable) {
@@ -54,6 +60,7 @@ const AI_CORE = {
 
                 }
 
+
                 return {
                     response:
                         `Tamam Samet. Adının ${name} olduğunu hafızama kaydettim.`
@@ -66,7 +73,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İSİM SORGUSU
+         * İSİM SOR
          * =========================
          */
 
@@ -80,6 +87,7 @@ const AI_CORE = {
                 const name =
                     Memory.getName();
 
+
                 if (name) {
 
                     return {
@@ -91,6 +99,7 @@ const AI_CORE = {
 
             }
 
+
             return {
                 response:
                     "Adını henüz hafızamda bulamadım."
@@ -101,40 +110,40 @@ const AI_CORE = {
 
         /*
          * =========================
-         * FAVORİ RENK
+         * FAVORİ RENK KAYDET
          * =========================
          */
 
+        const colors = [
+
+            "mavi",
+            "kırmızı",
+            "yeşil",
+            "sarı",
+            "siyah",
+            "beyaz",
+            "mor",
+            "turuncu",
+            "pembe"
+
+        ];
+
+
         if (
-            lower.includes("en sevdiğim renk") &&
             (
-                lower.includes("mavi") ||
-                lower.includes("kırmızı") ||
-                lower.includes("yeşil") ||
-                lower.includes("sarı") ||
-                lower.includes("siyah") ||
-                lower.includes("beyaz") ||
-                lower.includes("mor") ||
-                lower.includes("turuncu") ||
-                lower.includes("pembe")
+                lower.includes("en sevdiğim renk") ||
+                lower.includes("favori rengim")
+            ) &&
+            colors.some(
+                color =>
+                    lower.includes(color)
             )
         ) {
 
-            const colors = [
-                "mavi",
-                "kırmızı",
-                "yeşil",
-                "sarı",
-                "siyah",
-                "beyaz",
-                "mor",
-                "turuncu",
-                "pembe"
-            ];
-
             const color =
                 colors.find(
-                    c => lower.includes(c)
+                    color =>
+                        lower.includes(color)
                 );
 
 
@@ -158,13 +167,14 @@ const AI_CORE = {
 
         /*
          * =========================
-         * FAVORİ RENK SORGUSU
+         * FAVORİ RENK SOR
          * =========================
          */
 
         if (
             lower.includes("en sevdiğim renk") ||
-            lower.includes("sevdiğim renk ne")
+            lower.includes("sevdiğim renk ne") ||
+            lower.includes("favori rengim ne")
         ) {
 
             if (memoryAvailable) {
@@ -173,6 +183,7 @@ const AI_CORE = {
                     Memory.getPreference(
                         "favorite_color"
                     );
+
 
                 if (color) {
 
@@ -185,6 +196,7 @@ const AI_CORE = {
 
             }
 
+
             return {
                 response:
                     "En sevdiğin rengi henüz bilmiyorum."
@@ -195,7 +207,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İŞLETME
+         * İŞLETME KAYDET
          * =========================
          */
 
@@ -214,6 +226,7 @@ const AI_CORE = {
 
             }
 
+
             return {
                 response:
                     "Tamam. PlayStation salonu işlettiğini hafızama kaydettim."
@@ -224,14 +237,57 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İŞLETMEYİ HATIRLAMA
+         * GENEL BİLGİ KAYDET
+         * =========================
+         */
+
+        const rememberPatterns = [
+
+            "ben ",
+            "benim ",
+            "bende ",
+            "seviyorum",
+            "sevmiyorum",
+            "yaşıyorum",
+            "çalışıyorum",
+            "istiyorum"
+
+        ];
+
+
+        if (
+            lower.includes("hatırla") ||
+            lower.includes("unutma")
+        ) {
+
+            if (memoryAvailable) {
+
+                Memory.addFact(
+                    "user_note_" +
+                    Date.now(),
+                    text
+                );
+
+            }
+
+
+            return {
+                response:
+                    "Tamam. Bunu hafızama kaydettim."
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * İŞLETME HATIRLA
          * =========================
          */
 
         if (
-            lower.includes("işletmem hakkında ne biliyorsun") ||
-            lower.includes("işletmem hakkında ne biliyorsun") ||
-            lower.includes("salonum hakkında ne biliyorsun")
+            lower.includes("işletmem hakkında") ||
+            lower.includes("salonum hakkında")
         ) {
 
             if (memoryAvailable) {
@@ -240,6 +296,7 @@ const AI_CORE = {
                     Memory.getFact(
                         "business"
                     );
+
 
                 if (business) {
 
@@ -251,6 +308,7 @@ const AI_CORE = {
                 }
 
             }
+
 
             return {
                 response:
@@ -277,10 +335,12 @@ const AI_CORE = {
                 const name =
                     Memory.getName();
 
+
                 const color =
                     Memory.getPreference(
                         "favorite_color"
                     );
+
 
                 const business =
                     Memory.getFact(
@@ -318,7 +378,34 @@ const AI_CORE = {
                 }
 
 
-                if (facts.length > 0) {
+                const allFacts =
+                    Memory.allFacts();
+
+
+                Object.entries(
+                    allFacts
+                ).forEach(
+                    ([key, value]) => {
+
+                        if (
+                            key !== "name" &&
+                            key !== "business" &&
+                            !key.startsWith(
+                                "user_note_"
+                            )
+                        ) {
+
+                            facts.push(
+                                `${key}: ${value}`
+                            );
+
+                        }
+
+                    }
+                );
+
+
+                if (facts.length) {
 
                     return {
                         response:
@@ -339,25 +426,6 @@ const AI_CORE = {
             return {
                 response:
                     "Henüz senin hakkında yeterli kayıt yok."
-            };
-
-        }
-
-
-        /*
-         * =========================
-         * HATIRLA
-         * =========================
-         */
-
-        if (
-            lower.includes("hatırla") ||
-            lower.includes("unutma")
-        ) {
-
-            return {
-                response:
-                    "Tamam. Bunu hafızamda tutacağım."
             };
 
         }
@@ -420,7 +488,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * GENEL CEVAP
+         * GENEL
          * =========================
          */
 
@@ -435,5 +503,5 @@ const AI_CORE = {
 
 
 console.log(
-    "🤖 JARVIS AI Core v4.0 aktif."
+    "🤖 JARVIS AI Core v5.0 aktif."
 );
