@@ -2,25 +2,14 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const input =
-        document.getElementById("command");
-
-    const send =
-        document.getElementById("send");
-
-    const conversation =
-        document.getElementById("conversation");
-
+    const input = document.getElementById("command");
+    const send = document.getElementById("send");
+    const conversation = document.getElementById("conversation");
 
     if (!input || !send || !conversation) {
-
-        console.error(
-            "JARVIS: Arayüz elemanları bulunamadı."
-        );
-
+        console.error("JARVIS: Arayüz elemanları bulunamadı.");
         return;
     }
-
 
     const WORKER_URL =
         "https://jarvis-ai.agitacer6.workers.dev/";
@@ -69,11 +58,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    /*
+     * GERÇEK MEMORY
+     */
+
     function getMemory() {
 
         if (
             typeof Memory === "undefined"
         ) {
+
+            console.error(
+                "JARVIS: Memory bulunamadı."
+            );
 
             return {
                 name: null,
@@ -81,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 preferences: {},
                 recent: []
             };
-
         }
 
 
@@ -100,13 +96,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 Memory.recent(10)
 
         };
-
     }
 
 
-    function isMemorySummaryQuestion(text) {
+    /*
+     * HAFIZA SORUSU MU?
+     */
 
-        const normalized =
+    function isMemoryQuestion(text) {
+
+        const t =
             text
                 .toLowerCase()
                 .replace(/ı/g, "i")
@@ -114,39 +113,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 .replace(/ğ/g, "g")
                 .replace(/ü/g, "u")
                 .replace(/ö/g, "o")
-                .replace(/ç/g, "c");
+                .replace(/ç/g, "c")
+                .trim();
 
 
-        const patterns = [
+        return (
 
-            "benim hakkimda ne biliyorsun",
+            t.includes("benim hakkimda") ||
 
-            "benim hakkimda neler biliyorsun",
+            t.includes("beni taniyor") ||
 
-            "benim hakkimda bildiklerin",
+            t.includes("hafizamda ne var") ||
 
-            "benim hakkimda ne biliyorsun",
+            t.includes("hafizamda neler var") ||
 
-            "beni taniyor musun",
+            t.includes("benim bilgilerim") ||
 
-            "benim bilgilerim neler",
+            t.includes("benimle ilgili ne biliyorsun")
 
-            "hafizamda ne var",
-
-            "benimle ilgili ne biliyorsun"
-
-        ];
-
-
-        return patterns.some(
-            pattern =>
-                normalized.includes(pattern)
         );
-
     }
 
 
-    function createMemorySummary(memory) {
+    /*
+     * MEMORY'Yİ DOĞRUDAN OKU
+     */
+
+    function memoryAnswer(memory) {
 
         const lines = [];
 
@@ -154,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (memory.name) {
 
             lines.push(
-                "Adın: " +
+                "Ad: " +
                 memory.name
             );
 
@@ -167,11 +160,15 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-        for (const [key, value]
-            of facts) {
+        for (
+            const [key, value]
+            of facts
+        ) {
 
             lines.push(
-                `${key}: ${value}`
+                key +
+                ": " +
+                value
             );
 
         }
@@ -183,11 +180,15 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-        for (const [key, value]
-            of preferences) {
+        for (
+            const [key, value]
+            of preferences
+        ) {
 
             lines.push(
-                `${key}: ${value}`
+                key +
+                ": " +
+                value
             );
 
         }
@@ -195,30 +196,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!lines.length) {
 
-            return "Hafızamda senin hakkında kayıtlı bilgi bulunmuyor.";
+            return (
+                "Hafızamda senin hakkında " +
+                "kayıtlı bilgi bulunmuyor."
+            );
 
         }
 
 
         return (
-            "Hafızamda senin hakkında kayıtlı gerçek bilgiler:\n\n" +
+            "Hafızamda bulunan bilgiler:\n\n" +
             lines
-                .map(item => "• " + item)
+                .map(
+                    item => "• " + item
+                )
                 .join("\n")
         );
 
     }
 
 
+    /*
+     * MESAJ GÖNDER
+     */
+
     async function sendMessage() {
 
         const text =
             input.value.trim();
 
+
         if (!text) {
-
             return;
-
         }
 
 
@@ -238,22 +247,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             /*
-             * GENİŞ HAFIZA SORULARI
-             * DOĞRUDAN GERÇEK MEMORY'DEN CEVAPLANIR.
+             * GENİŞ HAFIZA SORUSU
+             * AI'YA GİTMEZ.
              */
 
             if (
-                isMemorySummaryQuestion(text)
+                isMemoryQuestion(text)
             ) {
 
-                const summary =
-                    createMemorySummary(
+                const answer =
+                    memoryAnswer(
                         memory
                     );
 
 
                 addMessage(
-                    summary,
+                    answer,
                     "jarvis"
                 );
 
@@ -270,20 +279,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     Memory.add(
                         "jarvis",
-                        summary
+                        answer
                     );
 
                 }
 
 
                 return;
-
             }
 
 
             /*
-             * NORMAL SORULAR
-             * CLOUDFLARE AI'YA GİDER.
+             * NORMAL AI SORUSU
              */
 
             const response =
@@ -291,8 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     WORKER_URL,
                     {
 
-                        method:
-                            "POST",
+                        method: "POST",
 
                         headers: {
 
@@ -397,7 +403,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 sendMessage();
 
             }
-
         }
     );
 
