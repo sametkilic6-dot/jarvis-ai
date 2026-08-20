@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -29,169 +27,130 @@
 
     <link
         rel="stylesheet"
-        href="style.css?v=3"
+        href="style.css?v=4"
     >
-
 </head>
-
 
 <body>
 
-<div id="app">
+    <div id="app">
 
+        <header class="top-bar">
 
-    <header class="top-bar">
+            <div class="brand">
 
-        <div class="brand">
-
-            <span class="brand-dot"></span>
-
-            JARVIS
-
-        </div>
-
-
-        <div id="connection-status">
-
-            ÇEVRİMİÇİ
-
-        </div>
-
-    </header>
-
-
-    <main>
-
-
-        <section class="core-section">
-
-            <div class="core">
-
-                <div
-                    class="core-ring ring-1"
-                ></div>
-
-                <div
-                    class="core-ring ring-2"
-                ></div>
-
-                <div class="core-center">
-
-                    J
-
-                </div>
-
-            </div>
-
-
-            <h1>
+                <span class="brand-dot"></span>
 
                 JARVIS
 
-            </h1>
-
-
-            <p id="system-status">
-
-                Sistemler çevrimiçi.
-
-            </p>
-
-        </section>
-
-
-        <section id="conversation">
-
-            <div class="message jarvis">
-
-                <div class="message-name">
-
-                    JARVIS
-
-                </div>
-
-                <div>
-
-                    Merhaba Samet.
-                    Sistemlerim çevrimiçi.
-
-                </div>
-
             </div>
 
-        </section>
+            <div id="connection-status">
+                ÇEVRİMİÇİ
+            </div>
+
+        </header>
 
 
-        <section class="command-area">
+        <main>
 
-            <input
-                id="command"
-                type="text"
-                placeholder="JARVIS'e bir komut ver..."
-                autocomplete="off"
-            >
+            <section class="core-section">
 
+                <div class="core">
 
-            <button
-                id="send"
-                type="button"
-            >
+                    <div
+                        class="core-ring ring-1"
+                    ></div>
 
-                ➤
+                    <div
+                        class="core-ring ring-2"
+                    ></div>
 
-            </button>
+                    <div class="core-center">
+                        J
+                    </div>
 
+                </div>
 
-            <button
-                id="microphone"
-                type="button"
-            >
+                <h1>
+                    JARVIS
+                </h1>
 
-                🎙️
+                <p id="system-status">
+                    Sistemler çevrimiçi.
+                </p>
 
-            </button>
-
-        </section>
-
-
-    </main>
+            </section>
 
 
-    <footer>
+            <section id="conversation">
 
-        <span>
+                <div class="message jarvis">
 
-            JARVIS AI
+                    <div class="message-name">
+                        JARVIS
+                    </div>
 
-        </span>
+                    <div>
+                        Merhaba Samet.
+                        Sistemlerim çevrimiçi.
+                    </div>
 
+                </div>
 
-        <span>
-
-            Türkçe • AI Core
-
-        </span>
-
-    </footer>
-
-
-</div>
+            </section>
 
 
-<!--
-    ÖNEMLİ:
-    Memory önce yükleniyor.
-    Daha sonra AI Core.
-    En son App.
--->
+            <section class="command-area">
 
-<script src="js/memory.js?v=3"></script>
+                <input
+                    id="command"
+                    type="text"
+                    placeholder="JARVIS'e bir komut ver..."
+                    autocomplete="off"
+                >
 
-<script src="js/ai-core.js?v=3"></script>
+                <button
+                    id="send"
+                    type="button"
+                >
+                    ➤
+                </button>
 
-<script src="js/app.js?v=3"></script>
+                <button
+                    id="microphone"
+                    type="button"
+                >
+                    🎙️
+                </button>
 
+            </section>
+
+        </main>
+
+
+        <footer>
+
+            <span>
+                JARVIS AI
+            </span>
+
+            <span>
+                Türkçe • AI Core
+            </span>
+
+        </footer>
+
+    </div>
+
+
+    <!-- JARVIS DOSYA SIRASI -->
+
+    <script src="js/memory.js?v=4"></script>
+
+    <script src="js/ai-core.js?v=4"></script>
+
+    <script src="js/app.js?v=4"></script>
 
 </body>
-
 </html>
