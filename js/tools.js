@@ -1,25 +1,47 @@
+"use strict";
+
+/*
+ * JARVIS TOOLS CORE
+ *
+ * Bütün araçlar buraya kayıt edilir.
+ * Araçlar AI tarafından doğrudan sınırsız
+ * şekilde çalıştırılmaz.
+ *
+ * Önce Security Core kontrol eder.
+ */
+
 const JARVIS_TOOLS = {};
 
 
 /*
- * Araç kaydetme
+ * =====================================================
+ * ARAÇ KAYIT SİSTEMİ
+ * =====================================================
  */
 
 function registerTool({
+
     name,
+
     description,
+
     risk = "safe",
+
     execute
+
 }) {
 
     if (
         !name ||
         typeof execute !== "function"
     ) {
+
         throw new Error(
             "Geçersiz JARVIS aracı."
         );
+
     }
+
 
     JARVIS_TOOLS[name] = {
 
@@ -37,7 +59,9 @@ function registerTool({
 
 
 /*
- * Araç listeleme
+ * =====================================================
+ * ARAÇ LİSTESİ
+ * =====================================================
  */
 
 function listTools() {
@@ -46,12 +70,14 @@ function listTools() {
         JARVIS_TOOLS
     ).map(tool => ({
 
-        name: tool.name,
+        name:
+            tool.name,
 
         description:
             tool.description,
 
-        risk: tool.risk
+        risk:
+            tool.risk
 
     }));
 
@@ -59,7 +85,9 @@ function listTools() {
 
 
 /*
- * Güvenli araç: saat
+ * =====================================================
+ * SAAT
+ * =====================================================
  */
 
 registerTool({
@@ -67,7 +95,7 @@ registerTool({
     name: "saat",
 
     description:
-        "Mevcut saati söyler.",
+        "Mevcut saati gösterir.",
 
     risk: "safe",
 
@@ -75,7 +103,11 @@ registerTool({
 
         return new Date()
             .toLocaleTimeString(
-                "tr-TR"
+                "tr-TR",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
             );
 
     }
@@ -84,7 +116,9 @@ registerTool({
 
 
 /*
- * Güvenli araç: tarih
+ * =====================================================
+ * TARİH
+ * =====================================================
  */
 
 registerTool({
@@ -92,7 +126,7 @@ registerTool({
     name: "tarih",
 
     description:
-        "Bugünün tarihini söyler.",
+        "Bugünün tarihini gösterir.",
 
     risk: "safe",
 
@@ -100,7 +134,12 @@ registerTool({
 
         return new Date()
             .toLocaleDateString(
-                "tr-TR"
+                "tr-TR",
+                {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                }
             );
 
     }
@@ -109,7 +148,55 @@ registerTool({
 
 
 /*
- * JARVIS'in araç çalıştırması
+ * =====================================================
+ * HAFIZA İSTATİSTİĞİ
+ * =====================================================
+ */
+
+registerTool({
+
+    name: "hafiza-durumu",
+
+    description:
+        "JARVIS hafızasının durumunu gösterir.",
+
+    risk: "safe",
+
+    execute() {
+
+        if (
+            typeof Memory ===
+            "undefined"
+        ) {
+
+            return "Hafıza sistemi hazır değil.";
+
+        }
+
+
+        const stats =
+            Memory.getStats();
+
+
+        return (
+            "Hafıza hazır. " +
+            stats.memories +
+            " anı, " +
+            stats.conversations +
+            " konuşma ve " +
+            stats.profileItems +
+            " profil bilgisi kayıtlı."
+        );
+
+    }
+
+});
+
+
+/*
+ * =====================================================
+ * ARAÇ ÇALIŞTIRMA
+ * =====================================================
  */
 
 async function executeTool(
@@ -120,6 +207,7 @@ async function executeTool(
     const tool =
         JARVIS_TOOLS[name];
 
+
     if (!tool) {
 
         return {
@@ -127,7 +215,8 @@ async function executeTool(
             success: false,
 
             error:
-                "Araç bulunamadı."
+                "Araç bulunamadı: " +
+                name
 
         };
 
@@ -135,38 +224,66 @@ async function executeTool(
 
 
     /*
-     * Kritik araçlar Security Core
-     * tarafından kontrol edilecek.
+     * Araç riskini Security Core'a gönder.
      */
 
+    const securityAction =
+        `${tool.risk}-${tool.name}`;
+
+
     if (
-        typeof Security !== "undefined" &&
-        Security.requiresApproval(
-            `${tool.risk}-${name}`
-        )
+        typeof Security !==
+        "undefined"
     ) {
 
-        const approval =
-            Security.createApprovalRequest(
-
-                name,
-
-                "JARVIS bu aracı çalıştırmak için izin istiyor."
-
+        const security =
+            Security.canExecute(
+                securityAction
             );
 
-        return {
 
-            success: false,
+        if (!security.allowed) {
 
-            requiresApproval: true,
+            const approval =
+                Security
+                    .createApprovalRequest({
 
-            approval
+                        action:
+                            securityAction,
 
-        };
+                        reason:
+                            "JARVIS bu aracı çalıştırmak için kullanıcı kontrolüne ihtiyaç duyuyor.",
+
+                        details: {
+
+                            tool:
+                                tool.name,
+
+                            parameters
+
+                        }
+
+                    });
+
+
+            return {
+
+                success: false,
+
+                requiresApproval: true,
+
+                approval
+
+            };
+
+        }
 
     }
 
+
+    /*
+     * Aracı çalıştır.
+     */
 
     try {
 
@@ -174,6 +291,7 @@ async function executeTool(
             await tool.execute(
                 parameters
             );
+
 
         return {
 
@@ -185,15 +303,53 @@ async function executeTool(
 
     } catch (error) {
 
+        console.error(
+            "JARVIS Tool Error:",
+            error
+        );
+
+
         return {
 
             success: false,
 
             error:
-                error.message
+                error.message ||
+                "Araç çalıştırılamadı."
 
         };
 
     }
 
 }
+
+
+/*
+ * =====================================================
+ * ARAÇ SİSTEMİ DURUMU
+ * =====================================================
+ */
+
+function getToolsStatus() {
+
+    return {
+
+        active: true,
+
+        count:
+            Object.keys(
+                JARVIS_TOOLS
+            ).length,
+
+        tools:
+            listTools()
+
+    };
+
+}
+
+
+console.log(
+    "JARVIS Tools Core aktif.",
+    getToolsStatus()
+);
