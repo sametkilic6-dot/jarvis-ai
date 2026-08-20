@@ -3,7 +3,8 @@
 const AI_CORE = {
 
     name: "JARVIS",
-    version: "5.0",
+
+    version: "6.0",
 
 
     async think(input) {
@@ -73,7 +74,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İSİM SOR
+         * İSİM SORGULA
          * =========================
          */
 
@@ -167,7 +168,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * FAVORİ RENK SOR
+         * FAVORİ RENK SORGULA
          * =========================
          */
 
@@ -207,7 +208,50 @@ const AI_CORE = {
 
         /*
          * =========================
-         * İŞLETME KAYDET
+         * İZMİR / YAŞAM YERİ
+         * =========================
+         */
+
+        const locationMatch =
+            text.match(
+                /(?:ben\s+)?(.+?)['’]?(?:de|da|te|ta)\s+yaşıyorum/i
+            );
+
+
+        if (
+            locationMatch
+        ) {
+
+            const location =
+                locationMatch[1]
+                    .trim();
+
+
+            if (
+                location &&
+                location.length < 100 &&
+                memoryAvailable
+            ) {
+
+                Memory.addFact(
+                    "location",
+                    location
+                );
+
+            }
+
+
+            return {
+                response:
+                    `Tamam. ${location} bölgesinde yaşadığını hafızama kaydettim.`
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * İŞLETME
          * =========================
          */
 
@@ -237,51 +281,7 @@ const AI_CORE = {
 
         /*
          * =========================
-         * GENEL BİLGİ KAYDET
-         * =========================
-         */
-
-        const rememberPatterns = [
-
-            "ben ",
-            "benim ",
-            "bende ",
-            "seviyorum",
-            "sevmiyorum",
-            "yaşıyorum",
-            "çalışıyorum",
-            "istiyorum"
-
-        ];
-
-
-        if (
-            lower.includes("hatırla") ||
-            lower.includes("unutma")
-        ) {
-
-            if (memoryAvailable) {
-
-                Memory.addFact(
-                    "user_note_" +
-                    Date.now(),
-                    text
-                );
-
-            }
-
-
-            return {
-                response:
-                    "Tamam. Bunu hafızama kaydettim."
-            };
-
-        }
-
-
-        /*
-         * =========================
-         * İŞLETME HATIRLA
+         * İŞLETME SORGULA
          * =========================
          */
 
@@ -320,12 +320,83 @@ const AI_CORE = {
 
         /*
          * =========================
+         * YAŞADIĞI YERİ SOR
+         * =========================
+         */
+
+        if (
+            lower.includes("nerede yaşıyorum") ||
+            lower.includes("hangi şehirde yaşıyorum") ||
+            lower.includes("yaşadığım yer neresi")
+        ) {
+
+            if (memoryAvailable) {
+
+                const location =
+                    Memory.getFact(
+                        "location"
+                    );
+
+
+                if (location) {
+
+                    return {
+                        response:
+                            `${location} bölgesinde yaşadığını hatırlıyorum.`
+                    };
+
+                }
+
+            }
+
+
+            return {
+                response:
+                    "Yaşadığın yeri henüz hafızamda bulamıyorum."
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * HATIRLA
+         * =========================
+         */
+
+        if (
+            lower.includes("hatırla") ||
+            lower.includes("unutma")
+        ) {
+
+            if (memoryAvailable) {
+
+                Memory.addFact(
+                    "user_note_" +
+                    Date.now(),
+                    text
+                );
+
+            }
+
+
+            return {
+                response:
+                    "Tamam. Bunu hafızama kaydettim."
+            };
+
+        }
+
+
+        /*
+         * =========================
          * GENEL HAFIZA
          * =========================
          */
 
         if (
             lower.includes("hafızanda ne var") ||
+            lower.includes("hafızamda ne var") ||
             lower.includes("benim hakkımda ne biliyorsun") ||
             lower.includes("beni ne kadar tanıyorsun")
         ) {
@@ -335,16 +406,19 @@ const AI_CORE = {
                 const name =
                     Memory.getName();
 
-
                 const color =
                     Memory.getPreference(
                         "favorite_color"
                     );
 
-
                 const business =
                     Memory.getFact(
                         "business"
+                    );
+
+                const location =
+                    Memory.getFact(
+                        "location"
                     );
 
 
@@ -369,6 +443,15 @@ const AI_CORE = {
                 }
 
 
+                if (location) {
+
+                    facts.push(
+                        `Yaşadığın yer: ${location}`
+                    );
+
+                }
+
+
                 if (business) {
 
                     facts.push(
@@ -376,33 +459,6 @@ const AI_CORE = {
                     );
 
                 }
-
-
-                const allFacts =
-                    Memory.allFacts();
-
-
-                Object.entries(
-                    allFacts
-                ).forEach(
-                    ([key, value]) => {
-
-                        if (
-                            key !== "name" &&
-                            key !== "business" &&
-                            !key.startsWith(
-                                "user_note_"
-                            )
-                        ) {
-
-                            facts.push(
-                                `${key}: ${value}`
-                            );
-
-                        }
-
-                    }
-                );
 
 
                 if (facts.length) {
@@ -503,5 +559,5 @@ const AI_CORE = {
 
 
 console.log(
-    "🤖 JARVIS AI Core v5.0 aktif."
+    "🤖 JARVIS AI Core v6.0 aktif."
 );
