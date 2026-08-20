@@ -29,9 +29,6 @@ const JarvisApp = {
         const command =
             document.getElementById("command");
 
-        const microphone =
-            document.getElementById("microphone");
-
 
         if (send) {
 
@@ -64,34 +61,15 @@ const JarvisApp = {
 
         }
 
-
-        if (microphone) {
-
-            microphone.addEventListener(
-                "click",
-                () => {
-
-                    if (
-                        typeof Voice !==
-                        "undefined"
-                    ) {
-
-                        Voice.listen();
-
-                    }
-
-                }
-            );
-
-        }
-
     },
 
 
     async processCommand() {
 
         const input =
-            document.getElementById("command");
+            document.getElementById(
+                "command"
+            );
 
 
         if (!input) {
@@ -99,11 +77,11 @@ const JarvisApp = {
         }
 
 
-        const command =
+        const text =
             input.value.trim();
 
 
-        if (!command) {
+        if (!text) {
             return;
         }
 
@@ -112,7 +90,7 @@ const JarvisApp = {
 
 
         this.addMessage(
-            command,
+            text,
             "user"
         );
 
@@ -126,52 +104,21 @@ const JarvisApp = {
 
             const result =
                 await AI_CORE.think(
-                    command
+                    text
                 );
 
 
             const response =
-                result?.response ||
-                "AI cevap vermedi.";
+                result &&
+                result.response
+                    ? result.response
+                    : "JARVIS cevap vermedi.";
 
 
             this.addMessage(
                 response,
                 "jarvis"
             );
-
-
-            if (
-                typeof Memory !==
-                "undefined"
-            ) {
-
-                Memory.addConversation(
-                    "user",
-                    command
-                );
-
-
-                Memory.addConversation(
-                    "assistant",
-                    response
-                );
-
-            }
-
-
-            if (
-                typeof Voice !==
-                "undefined" &&
-                typeof Voice.speak ===
-                "function"
-            ) {
-
-                Voice.speak(
-                    response
-                );
-
-            }
 
 
             this.updateStatus(
@@ -182,26 +129,23 @@ const JarvisApp = {
         } catch (error) {
 
             console.error(
-                "JARVIS APP ERROR:",
+                "JARVIS ERROR:",
                 error
             );
 
 
-            const message =
-                error?.message ||
-                String(error);
-
-
             this.addMessage(
-                "GERÇEK HATA: " +
-                message,
+                "JARVIS hata verdi: " +
+                (
+                    error.message ||
+                    error
+                ),
                 "jarvis"
             );
 
 
             this.updateStatus(
-                "HATA: " +
-                message
+                "Hata oluştu."
             );
 
         }
