@@ -1,10 +1,5 @@
 "use strict";
 
-/*
- * JARVIS APPLICATION CORE
- * Türkçe kişisel AI asistanı
- */
-
 const JarvisApp = {
 
     initialized: false,
@@ -20,11 +15,7 @@ const JarvisApp = {
         this.bindEvents();
 
         this.updateStatus(
-            "JARVIS çekirdeği hazır."
-        );
-
-        console.log(
-            "JARVIS başlatıldı."
+            "Sistemler çevrimiçi."
         );
 
     },
@@ -32,19 +23,19 @@ const JarvisApp = {
 
     bindEvents() {
 
-        const sendButton =
+        const send =
             document.getElementById("send");
 
-        const commandInput =
+        const command =
             document.getElementById("command");
 
         const microphone =
             document.getElementById("microphone");
 
 
-        if (sendButton) {
+        if (send) {
 
-            sendButton.addEventListener(
+            send.addEventListener(
                 "click",
                 () => this.processCommand()
             );
@@ -52,9 +43,9 @@ const JarvisApp = {
         }
 
 
-        if (commandInput) {
+        if (command) {
 
-            commandInput.addEventListener(
+            command.addEventListener(
                 "keydown",
                 event => {
 
@@ -78,7 +69,18 @@ const JarvisApp = {
 
             microphone.addEventListener(
                 "click",
-                () => this.startVoice()
+                () => {
+
+                    if (
+                        typeof Voice !==
+                        "undefined"
+                    ) {
+
+                        Voice.listen();
+
+                    }
+
+                }
             );
 
         }
@@ -90,6 +92,7 @@ const JarvisApp = {
 
         const input =
             document.getElementById("command");
+
 
         if (!input) {
             return;
@@ -115,122 +118,100 @@ const JarvisApp = {
 
 
         this.updateStatus(
-            "Komut analiz ediliyor..."
+            "JARVIS düşünüyor..."
         );
-
-
-        /*
-         * Kullanıcı mesajını hafızaya kaydet.
-         */
-
-        if (
-            typeof Memory !== "undefined"
-        ) {
-
-            Memory.addConversation(
-                "user",
-                command
-            );
-
-        }
-
-
-        let response;
 
 
         try {
 
-            /*
-             * AI Core mevcutsa kullan.
-             */
+            const result =
+                await AI_CORE.think(
+                    command
+                );
+
+
+            const response =
+                result?.response ||
+                "AI cevap vermedi.";
+
+
+            this.addMessage(
+                response,
+                "jarvis"
+            );
+
 
             if (
-                typeof AI_CORE !== "undefined" &&
-                typeof AI_CORE.think === "function"
+                typeof Memory !==
+                "undefined"
             ) {
 
-                const result =
-                    await AI_CORE.think(
-                        command
-                    );
+                Memory.addConversation(
+                    "user",
+                    command
+                );
 
-                response =
-                    result?.response ||
-                    "Komut işlendi fakat cevap oluşturulamadı.";
 
-            } else {
-
-                response =
-                    "AI Core henüz yüklenmedi.";
+                Memory.addConversation(
+                    "assistant",
+                    response
+                );
 
             }
+
+
+            if (
+                typeof Voice !==
+                "undefined" &&
+                typeof Voice.speak ===
+                "function"
+            ) {
+
+                Voice.speak(
+                    response
+                );
+
+            }
+
+
+            this.updateStatus(
+                "Sistemler çevrimiçi."
+            );
 
 
         } catch (error) {
 
             console.error(
-                "JARVIS AI Core hatası:",
+                "JARVIS APP ERROR:",
                 error
             );
 
-            response =
-                "Bir sistem hatası oluştu.";
 
-        }
-
-
-        /*
-         * Cevabı ekrana gönder.
-         */
-
-        this.addMessage(
-            response,
-            "jarvis"
-        );
+            const message =
+                error?.message ||
+                String(error);
 
 
-        /*
-         * Cevabı hafızaya kaydet.
-         */
+            this.addMessage(
+                "GERÇEK HATA: " +
+                message,
+                "jarvis"
+            );
 
-        if (
-            typeof Memory !== "undefined"
-        ) {
 
-            Memory.addConversation(
-                "assistant",
-                response
+            this.updateStatus(
+                "HATA: " +
+                message
             );
 
         }
-
-
-        /*
-         * Sesli cevap.
-         */
-
-        if (
-            typeof Voice !== "undefined" &&
-            typeof Voice.speak === "function"
-        ) {
-
-            Voice.speak(
-                response
-            );
-
-        }
-
-
-        this.updateStatus(
-            "Sistemler hazır."
-        );
 
     },
 
 
     addMessage(
         text,
-        sender = "jarvis"
+        sender
     ) {
 
         const conversation =
@@ -256,18 +237,23 @@ const JarvisApp = {
                 : "message jarvis";
 
 
-        if (sender === "jarvis") {
+        if (
+            sender !== "user"
+        ) {
 
             const name =
                 document.createElement(
                     "div"
                 );
 
+
             name.className =
                 "message-name";
 
+
             name.textContent =
                 "JARVIS";
+
 
             message.appendChild(
                 name
@@ -280,6 +266,7 @@ const JarvisApp = {
             document.createElement(
                 "div"
             );
+
 
         content.textContent =
             text;
@@ -295,14 +282,8 @@ const JarvisApp = {
         );
 
 
-        window.requestAnimationFrame(
-            () => {
-
-                conversation.scrollTop =
-                    conversation.scrollHeight;
-
-            }
-        );
+        conversation.scrollTop =
+            conversation.scrollHeight;
 
     },
 
@@ -322,52 +303,14 @@ const JarvisApp = {
 
         }
 
-    },
-
-
-    startVoice() {
-
-        if (
-            typeof Voice === "undefined"
-        ) {
-
-            this.addMessage(
-                "Ses sistemi henüz hazır değil.",
-                "jarvis"
-            );
-
-            return;
-
-        }
-
-
-        if (
-            typeof Voice.listen !== "function"
-        ) {
-
-            this.addMessage(
-                "Ses tanıma sistemi kullanılamıyor.",
-                "jarvis"
-            );
-
-            return;
-
-        }
-
-
-        Voice.listen();
-
     }
 
 };
 
 
-/*
- * JARVIS'i başlat.
- */
-
 if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
 ) {
 
     document.addEventListener(
