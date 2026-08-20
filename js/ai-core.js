@@ -1,29 +1,154 @@
 "use strict";
 
 /*
- * JARVIS AI CORE
+ * JARVIS LOCAL AI CORE
  *
- * Görevi:
- * - Komutu analiz etmek
- * - Hafıza ile iletişim kurmak
- * - Araçları çağırmak
- * - Güvenlik katmanını kullanmak
- * - İleride gerçek yerel AI modeline bağlanmak
+ * WebLLM ile modeli doğrudan tarayıcıda çalıştırır.
+ *
+ * API KEY YOK
+ * Sunucu YOK
+ * İstek başına ücret YOK
  */
 
 const AI_CORE = {
 
-    name: "JARVIS AI Core",
+    engine: null,
 
-    version: "0.1.0",
+    initialized: false,
 
-    status: "ready",
+    loading: false,
+
+    modelLoaded: false,
+
+    /*
+     * İlk test için nispeten küçük model.
+     *
+     * Model seçimini daha sonra cihazın
+     * gücüne göre otomatikleştireceğiz.
+     */
+
+    model:
+        "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+
+
+    async init() {
+
+        if (this.initialized) {
+
+            return true;
+
+        }
+
+
+        if (this.loading) {
+
+            return false;
+
+        }
+
+
+        this.loading = true;
+
+
+        this.updateStatus(
+            "Yerel AI hazırlanıyor..."
+        );
+
+
+        try {
+
+            /*
+             * WebLLM'i doğrudan module olarak yükle.
+             */
+
+            const webllm =
+                await import(
+                    "https://esm.run/@mlc-ai/web-llm"
+                );
+
+
+            /*
+             * Engine oluştur.
+             */
+
+            this.engine =
+                await webllm.CreateMLCEngine(
+                    this.model,
+                    {
+
+                        initProgressCallback:
+                            progress =>
+                                this.handleProgress(
+                                    progress
+                                )
+
+                    }
+                );
+
+
+            this.initialized =
+                true;
+
+
+            this.modelLoaded =
+                true;
+
+
+            this.loading =
+                false;
+
+
+            this.updateStatus(
+                "JARVIS çevrimiçi."
+            );
+
+
+            this.updateModelStatus(
+                "Yerel AI aktif"
+            );
+
+
+            console.log(
+                "JARVIS Local AI hazır."
+            );
+
+
+            return true;
+
+
+        } catch (error) {
+
+            console.error(
+                "WebLLM başlatma hatası:",
+                error
+            );
+
+
+            this.loading =
+                false;
+
+
+            this.updateStatus(
+                "Yerel AI başlatılamadı."
+            );
+
+
+            this.updateModelStatus(
+                "AI modeli bu cihazda çalıştırılamadı."
+            );
+
+
+            return false;
+
+        }
+
+    },
 
 
     async think(input) {
 
         if (
-            typeof input !== "string" ||
+            !input ||
             !input.trim()
         ) {
 
@@ -39,217 +164,286 @@ const AI_CORE = {
         }
 
 
-        const command =
-            input.trim();
-
-
         /*
-         * Önce özel komutları kontrol et.
+         * Model henüz yüklenmediyse başlat.
          */
 
-        const special =
-            await this.handleSpecialCommand(
-                command
-            );
+        if (!this.modelLoaded) {
+
+            const ready =
+                await this.init();
 
 
-        if (special) {
-
-            return {
-
-                success: true,
-
-                response: special
-
-            };
-
-        }
-
-
-        /*
-         * Araç kontrolü.
-         */
-
-        const tool =
-            this.detectTool(command);
-
-
-        if (tool) {
-
-            const result =
-                await executeTool(
-                    tool
-                );
-
-
-            if (
-                result.requiresApproval
-            ) {
+            if (!ready) {
 
                 return {
 
                     success: false,
 
-                    requiresApproval: true,
-
                     response:
-                        "Bu işlem için Samet'in onayı gerekiyor.",
-
-                    approval:
-                        result.approval
+                        "Yerel AI modeli başlatılamadı."
 
                 };
 
             }
 
+        }
 
-            if (result.success) {
+
+        try {
+
+            /*
+             * Hafızadan yakın konuşmaları al.
+             */
+
+            let context = "";
+
+
+            if (
+                typeof Memory !==
+                "undefined"
+            ) {
+
+                const recent =
+                    Memory
+                        .getRecentConversations(
+                            10
+                        );
+
+
+                if (
+                    recent.length
+                ) {
+
+                    context =
+                        recent
+                            .map(
+                                message =>
+                                    `${message.role}: ${message.text}`
+                            )
+                            .join("\n");
+
+                }
+
+            }
+
+
+            const systemPrompt = `
+
+Sen JARVIS'sin.
+
+Kullanıcı: Samet.
+
+Türkçe konuş.
+
+Kısa, doğal ve anlaşılır cevaplar ver.
+
+Kendini JARVIS olarak tanıt.
+
+Bilmediğin bilgileri uydurma.
+
+Kritik sistem işlemlerini kullanıcı
+onayı olmadan gerçekleştirme.
+
+Kullanıcı senden kod veya sistem
+değişikliği istediğinde önce ne
+yapacağını açıkla.
+
+Önceki konuşma bağlamı:
+
+${context}
+
+`;
+
+
+            const response =
+                await this.engine.chat.completions.create({
+
+                    messages: [
+
+                        {
+
+                            role:
+                                "system",
+
+                            content:
+                                systemPrompt
+
+                        },
+
+                        {
+
+                            role:
+                                "user",
+
+                            content:
+                                input
+
+                        }
+
+                    ],
+
+                    temperature:
+                        0.7,
+
+                    max_tokens:
+                        512
+
+                });
+
+
+            const text =
+                response
+                    ?.choices?.[0]
+                    ?.message
+                    ?.content
+                    ?.trim();
+
+
+            if (!text) {
 
                 return {
 
-                    success: true,
+                    success: false,
 
                     response:
-                        result.result
+                        "AI cevap oluşturamadı."
 
                 };
 
             }
 
+
+            return {
+
+                success: true,
+
+                response:
+                    text
+
+            };
+
+
+        } catch (error) {
+
+            console.error(
+                "JARVIS AI hatası:",
+                error
+            );
+
+
+            return {
+
+                success: false,
+
+                response:
+                    "Yerel AI çalışırken bir hata oluştu."
+
+            };
+
         }
 
+    },
 
-        /*
-         * Şimdilik yerel temel cevap motoru.
-         *
-         * Gerçek yerel AI modeli sonraki
-         * aşamada buraya bağlanacak.
-         */
 
-        return {
+    handleProgress(progress) {
 
-            success: true,
+        const value =
+            progress?.progress;
 
-            response:
-                this.basicReasoning(
-                    command
+
+        const text =
+            progress?.text;
+
+
+        const percent =
+            typeof value === "number"
+                ? Math.round(
+                    value * 100
                 )
-
-        };
-
-    },
+                : null;
 
 
-    async handleSpecialCommand(
-        command
-    ) {
-
-        const text =
-            command.toLocaleLowerCase(
-                "tr-TR"
-            );
-
-
-        if (
-            text.includes("merhaba") ||
-            text.includes("selam")
-        ) {
-
-            return (
-                "Merhaba Samet. " +
-                "Sistemler çevrimiçi."
-            );
-
-        }
+        const message =
+            percent !== null
+                ? `AI modeli hazırlanıyor: ${percent}%`
+                : (
+                    text ||
+                    "AI modeli hazırlanıyor..."
+                );
 
 
-        if (
-            text.includes("kimsin")
-        ) {
-
-            return (
-                "Ben JARVIS. " +
-                "Samet için geliştirilen " +
-                "kişisel yapay zekâ asistanıyım."
-            );
-
-        }
-
-
-        if (
-            text.includes("durumun ne") ||
-            text.includes("sistem durumu")
-        ) {
-
-            return (
-                "AI Core çevrimiçi. " +
-                "Güvenli mod aktif."
-            );
-
-        }
-
-
-        if (
-            text.includes("ne yapabiliyorsun")
-        ) {
-
-            return (
-                "Şu anda temel konuşma, " +
-                "hafıza, ses ve araç altyapım hazır. " +
-                "Gerçek yerel AI modeli henüz bağlanmadı."
-            );
-
-        }
-
-
-        return null;
-
-    },
-
-
-    detectTool(command) {
-
-        const text =
-            command.toLocaleLowerCase(
-                "tr-TR"
-            );
-
-
-        if (
-            text.includes("saat kaç") ||
-            text === "saat"
-        ) {
-
-            return "saat";
-
-        }
-
-
-        if (
-            text.includes("bugün tarih") ||
-            text === "tarih" ||
-            text.includes("tarih ne")
-        ) {
-
-            return "tarih";
-
-        }
-
-
-        return null;
-
-    },
-
-
-    basicReasoning(command) {
-
-        return (
-            `"${command}" komutunu aldım. ` +
-            "Temel AI Core çalışıyor. " +
-            "Bir sonraki aşamada gerçek yerel " +
-            "AI modeli bağlanacak."
+        this.updateModelStatus(
+            message
         );
+
+
+        const progressElement =
+            document.getElementById(
+                "model-progress"
+            );
+
+
+        if (progressElement) {
+
+            progressElement.style.display =
+                "block";
+
+
+            progressElement.textContent =
+                message;
+
+        }
+
+    },
+
+
+    updateStatus(text) {
+
+        const element =
+            document.getElementById(
+                "system-status"
+            );
+
+
+        if (element) {
+
+            element.textContent =
+                text;
+
+        }
+
+    },
+
+
+    updateModelStatus(text) {
+
+        const element =
+            document.getElementById(
+                "model-status"
+            );
+
+
+        if (element) {
+
+            element.textContent =
+                text;
+
+        }
 
     }
 
 };
+
+
+/*
+ * Sayfa açıldığında AI modelini
+ * otomatik indirmiyoruz.
+ *
+ * Kullanıcı ilk mesajı gönderdiğinde
+ * model başlatılacak.
+ */
+
+console.log(
+    "JARVIS Local AI Core yüklendi."
+);
