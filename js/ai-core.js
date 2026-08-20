@@ -4,70 +4,196 @@ const AI_CORE = {
 
     name: "JARVIS",
 
-    version: "2.0",
+    version: "3.0",
 
 
     async think(input) {
 
-        const text =
-            String(input || "").trim();
-
+        const text = String(input || "").trim();
 
         if (!text) {
+            return {
+                response: "Dinliyorum Samet."
+            };
+        }
+
+
+        const lower = text.toLowerCase();
+
+
+        /*
+         * =========================
+         * HAFIZA KAYITLARI
+         * =========================
+         */
+
+        const memoryAvailable =
+            typeof Memory !== "undefined";
+
+
+        /*
+         * =========================
+         * BİLGİ KAYDETME
+         * =========================
+         */
+
+        if (
+            lower.includes("benim en sevdiğim renk") &&
+            (
+                lower.includes("mavi") ||
+                lower.includes("kırmızı") ||
+                lower.includes("yeşil") ||
+                lower.includes("sarı") ||
+                lower.includes("siyah") ||
+                lower.includes("beyaz") ||
+                lower.includes("mor") ||
+                lower.includes("turuncu") ||
+                lower.includes("pembe")
+            )
+        ) {
+
+            const colors = [
+                "mavi",
+                "kırmızı",
+                "yeşil",
+                "sarı",
+                "siyah",
+                "beyaz",
+                "mor",
+                "turuncu",
+                "pembe"
+            ];
+
+
+            const color =
+                colors.find(c =>
+                    lower.includes(c)
+                );
+
+
+            if (memoryAvailable) {
+
+                Memory.add(
+                    "fact",
+                    `Samet'in en sevdiği renk: ${color}`
+                );
+
+            }
+
 
             return {
                 response:
-                    "Dinliyorum Samet."
+                    `Tamam Samet. En sevdiğin rengin ${color} olduğunu hafızama kaydettim.`
             };
 
         }
 
 
-        const lower =
-            text.toLowerCase();
-
-
         /*
-         * Hafızadan ilgili bilgileri bul.
+         * =========================
+         * RENK HAFIZA SORGUSU
+         * =========================
          */
 
-        let memories = [];
+        if (
+            lower.includes("en sevdiğim renk") ||
+            lower.includes("sevdiğim renk ne")
+        ) {
 
-        if (typeof Memory !== "undefined") {
+            if (memoryAvailable) {
 
-            memories =
-                Memory.search(text)
-                    .slice(-5);
+                const memories =
+                    Memory.recent(100);
+
+
+                for (
+                    let i = memories.length - 1;
+                    i >= 0;
+                    i--
+                ) {
+
+                    const item =
+                        memories[i];
+
+
+                    if (
+                        item.role === "fact" &&
+                        item.text
+                            .toLowerCase()
+                            .includes(
+                                "en sevdiği renk"
+                            )
+                    ) {
+
+                        const match =
+                            item.text.match(
+                                /renk:\s*(.+)$/i
+                            );
+
+
+                        if (match) {
+
+                            return {
+                                response:
+                                    `En sevdiğin renk ${match[1]}. Bunu hatırlıyorum.`
+                            };
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+            return {
+                response:
+                    "Bu bilgiyi henüz hafızamda bulamadım."
+            };
 
         }
 
 
         /*
-         * İsim
+         * =========================
+         * İSİM
+         * =========================
          */
 
         if (
-            lower.includes("benim adım") ||
-            lower.includes("ismim")
+            lower.startsWith("benim adım") ||
+            lower.startsWith("ismim")
         ) {
 
             const name =
                 text
                     .replace(
-                        /benim adım/i,
+                        /^benim adım/i,
                         ""
                     )
                     .replace(
-                        /ismim/i,
+                        /^ismim/i,
                         ""
                     )
                     .trim();
 
+
             if (name) {
+
+                if (memoryAvailable) {
+
+                    Memory.add(
+                        "fact",
+                        `Samet'in adı: ${name}`
+                    );
+
+                }
+
 
                 return {
                     response:
-                        `${name} olduğunu hatırlayacağım.`
+                        `Tamam. Adının ${name} olduğunu hatırlayacağım.`
                 };
 
             }
@@ -76,7 +202,65 @@ const AI_CORE = {
 
 
         /*
-         * "Hatırla" komutu
+         * =========================
+         * İSİM SORGUSU
+         * =========================
+         */
+
+        if (
+            lower.includes("benim adım ne") ||
+            lower.includes("ismim ne")
+        ) {
+
+            if (memoryAvailable) {
+
+                const memories =
+                    Memory.recent(100);
+
+
+                for (
+                    let i = memories.length - 1;
+                    i >= 0;
+                    i--
+                ) {
+
+                    if (
+                        memories[i].role === "fact" &&
+                        memories[i].text
+                            .includes("adı:")
+                    ) {
+
+                        const name =
+                            memories[i].text
+                                .split("adı:")
+                                [1]
+                                .trim();
+
+
+                        return {
+                            response:
+                                `Senin adın ${name}. Bunu hatırlıyorum.`
+                        };
+
+                    }
+
+                }
+
+            }
+
+
+            return {
+                response:
+                    "Adını henüz hafızamda bulamadım."
+            };
+
+        }
+
+
+        /*
+         * =========================
+         * HATIRLA KOMUTU
+         * =========================
          */
 
         if (
@@ -86,84 +270,65 @@ const AI_CORE = {
 
             return {
                 response:
-                    "Tamam. Bunu hafızama kaydettim."
+                    "Tamam. Bu bilgiyi hafızamda tutacağım."
             };
 
         }
 
 
         /*
-         * Basit hafıza sorguları
-         */
-
-        if (
-            lower.includes("en sevdiğim renk") ||
-            lower.includes("sevdiğim renk")
-        ) {
-
-            const colorMemory =
-                findMemoryByKeywords([
-                    "renk",
-                    "mavi",
-                    "kırmızı",
-                    "yeşil",
-                    "sarı",
-                    "siyah",
-                    "beyaz",
-                    "mor",
-                    "turuncu",
-                    "pembe"
-                ]);
-
-            if (colorMemory) {
-
-                return {
-                    response:
-                        `Hatırladığım kadarıyla: ${colorMemory}`
-                };
-
-            }
-
-        }
-
-
-        /*
-         * Hafızada arama
+         * =========================
+         * GENEL HAFIZA SORGUSU
+         * =========================
          */
 
         if (
             lower.includes("hatırlıyor musun") ||
             lower.includes("ne demiştim") ||
-            lower.includes("biliyor musun") ||
-            lower.includes("hatırladığın")
+            lower.includes("hafızanda ne var")
         ) {
 
-            if (memories.length > 0) {
+            if (memoryAvailable) {
 
-                const result =
-                    memories
-                        .map(item =>
-                            `${item.role}: ${item.text}`
-                        )
-                        .join("\n");
+                const memories =
+                    Memory.recent(10);
 
-                return {
-                    response:
-                        `Hafızamda bunlar var:\n${result}`
-                };
+
+                const useful =
+                    memories.filter(item =>
+                        item.role === "fact"
+                    );
+
+
+                if (useful.length > 0) {
+
+                    return {
+                        response:
+                            "Hafızamda kayıtlı bilgiler:\n\n" +
+                            useful
+                                .map(item =>
+                                    "• " + item.text
+                                )
+                                .join("\n")
+                    };
+
+                }
 
             }
 
+
             return {
                 response:
-                    "Bu konuyla ilgili hafızamda kayıt bulamadım."
+                    "Henüz önemli bir bilgi kaydetmedim."
             };
 
         }
 
 
         /*
-         * Temel sistem cevapları
+         * =========================
+         * TEMEL JARVIS CEVAPLARI
+         * =========================
          */
 
         if (
@@ -180,8 +345,7 @@ const AI_CORE = {
 
 
         if (
-            lower.includes("nasılsın") ||
-            lower.includes("nasıl gidiyor")
+            lower.includes("nasılsın")
         ) {
 
             return {
@@ -198,35 +362,16 @@ const AI_CORE = {
 
             return {
                 response:
-                    "Ben JARVIS. Yerel çalışan Türkçe yapay zekâ çekirdeğinim."
+                    "Ben JARVIS. Türkçe çalışan kişisel yapay zekâ asistanınım."
             };
 
         }
 
 
         /*
-         * Hafızada doğrudan eşleşme varsa
-         */
-
-        if (memories.length > 0) {
-
-            const last =
-                memories[memories.length - 1];
-
-            if (last.role === "user") {
-
-                return {
-                    response:
-                        `Bunu daha önce konuşmuştuk: "${last.text}"`
-                };
-
-            }
-
-        }
-
-
-        /*
-         * Genel cevap
+         * =========================
+         * GENEL CEVAP
+         * =========================
          */
 
         return {
@@ -239,66 +384,6 @@ const AI_CORE = {
 };
 
 
-/*
- * Hafızadan anahtar kelimelere göre
- * en anlamlı kaydı bulur.
- */
-
-function findMemoryByKeywords(
-    keywords
-) {
-
-    if (
-        typeof Memory === "undefined"
-    ) {
-
-        return null;
-
-    }
-
-
-    const all =
-        Memory.recent(100);
-
-
-    for (
-        let i = all.length - 1;
-        i >= 0;
-        i--
-    ) {
-
-        const item =
-            all[i];
-
-
-        const content =
-            item.text.toLowerCase();
-
-
-        for (
-            const keyword of keywords
-        ) {
-
-            if (
-                content.includes(
-                    keyword.toLowerCase()
-                )
-            ) {
-
-                return item.text;
-
-            }
-
-        }
-
-    }
-
-
-    return null;
-
-}
-
-
 console.log(
-    "🤖 JARVIS AI Core v2.0 aktif."
+    "🤖 JARVIS AI Core v3.0 aktif."
 );
