@@ -2,63 +2,40 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    const input =
-        document.getElementById("command");
-
-    const send =
-        document.getElementById("send");
-
-    const conversation =
-        document.getElementById("conversation");
-
+    const input = document.getElementById("command");
+    const send = document.getElementById("send");
+    const conversation = document.getElementById("conversation");
 
     if (!input || !send || !conversation) {
-
-        console.error(
-            "JARVIS: Arayüz elemanları bulunamadı."
-        );
-
+        console.error("JARVIS: Arayüz elemanları bulunamadı.");
         return;
     }
-
 
     const WORKER_URL =
         "https://jarvis-ai.agitacer6.workers.dev/";
 
-
     function addMessage(text, sender) {
 
-        const message =
-            document.createElement("div");
+        const message = document.createElement("div");
 
         message.classList.add(
             "message",
-            sender === "user"
-                ? "user"
-                : "jarvis"
+            sender === "user" ? "user" : "jarvis"
         );
-
 
         if (sender !== "user") {
 
-            const name =
-                document.createElement("div");
+            const name = document.createElement("div");
 
-            name.className =
-                "message-name";
-
-            name.textContent =
-                "JARVIS";
+            name.className = "message-name";
+            name.textContent = "JARVIS";
 
             message.appendChild(name);
         }
 
+        const content = document.createElement("div");
 
-        const content =
-            document.createElement("div");
-
-        content.textContent =
-            text;
+        content.textContent = text;
 
         message.appendChild(content);
 
@@ -66,6 +43,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
         conversation.scrollTop =
             conversation.scrollHeight;
+    }
+
+
+    function getMemory() {
+
+        if (
+            typeof Memory === "undefined"
+        ) {
+
+            return {};
+
+        }
+
+        return {
+
+            name:
+                Memory.getName(),
+
+            facts:
+                Memory.allFacts(),
+
+            preferences:
+                Memory.allPreferences(),
+
+            recent:
+                Memory.recent(10)
+
+        };
+
     }
 
 
@@ -77,7 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!text) {
             return;
         }
-
 
         input.value = "";
 
@@ -100,9 +105,17 @@ document.addEventListener("DOMContentLoaded", () => {
                                 "application/json"
                         },
 
-                        body: JSON.stringify({
-                            message: text
-                        })
+                        body:
+                            JSON.stringify({
+
+                                message:
+                                    text,
+
+                                memory:
+                                    getMemory()
+
+                            })
+
                     }
                 );
 
@@ -126,6 +139,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 "JARVIS cevap vermedi.",
                 "jarvis"
             );
+
+
+            if (
+                typeof Memory !== "undefined"
+            ) {
+
+                Memory.add(
+                    "user",
+                    text
+                );
+
+                Memory.add(
+                    "jarvis",
+                    result.response || ""
+                );
+
+            }
 
 
         } catch (error) {
