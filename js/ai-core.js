@@ -1,13 +1,11 @@
-// ai-core.js - JARVIS AI Core v5 (TinyLlama ile)
-// Yerel komutlar + WebLLM (hafif model)
+// ai-core.js - JARVIS AI Core v7 (Transformers.js ile)
+// Yerel komutlar + Transformers.js (WebAssembly)
 
 const AICore = (function() {
-    let engine = null;
+    let pipeline = null;
     let isModelLoaded = false;
     let isLoading = false;
     let loadError = null;
-    // DAHA HAFİF MODEL: TinyLlama 1.1B
-    let modelName = 'TinyLlama-1.1B-Chat-v0.4-q4f32_1';
 
     // Yerel komut desenleri (aynen)
     const PATTERNS = {
@@ -70,124 +68,7 @@ const AICore = (function() {
         ]
     };
 
-    // Yerel komut işleyici (aynı, kısaltmak için tekrar yazmıyorum)
-    function handleLocalCommand(text) {
-        // ... (önceki kodun aynısı, yerden tasarruf için kısaltıyorum)
-        // Daha önce verdiğim kodun aynısını kullan
-        // (Burada uzun kod var, aşağıda tam halini veriyorum)
-    }
-
-    // WebLLM ile sohbet (TinyLlama)
-    async function chatWithWebLLM(text) {
-        try {
-            if (!isModelLoaded && !isLoading) {
-                await loadModel();
-            }
-
-            if (!isModelLoaded) {
-                throw new Error('Model yüklenemedi');
-            }
-
-            const messages = [
-                { role: 'system', content: 'Sen JARVIS\'sin. Kullanıcı ile sohbet ediyorsun.' },
-                { role: 'user', content: text }
-            ];
-
-            const response = await engine.chat.completions.create({
-                messages: messages,
-                stream: false
-            });
-
-            return {
-                success: true,
-                response: response.choices[0].message.content
-            };
-
-        } catch (error) {
-            console.error('WebLLM hatası:', error);
-            return {
-                success: false,
-                error: error.message || 'AI modeli cevap verirken hata oluştu.'
-            };
-        }
-    }
-
-    // Modeli yükle (TinyLlama)
-    async function loadModel() {
-        try {
-            if (isLoading) return;
-            if (isModelLoaded) return;
-            
-            isLoading = true;
-            loadError = null;
-            
-            console.log('🔄 TinyLlama modeli yükleniyor...', modelName);
-            
-            const webllm = await import('https://esm.run/@mlc-ai/web-llm');
-            
-            engine = new webllm.Engine();
-            await engine.reload(modelName);
-            
-            isModelLoaded = true;
-            isLoading = false;
-            console.log('✅ TinyLlama model yüklendi!');
-            
-        } catch (error) {
-            console.error('❌ Model yükleme hatası:', error);
-            loadError = error;
-            isLoading = false;
-            isModelLoaded = false;
-            throw error;
-        }
-    }
-
-    // Ana think fonksiyonu
-    async function think(text) {
-        if (!text || text.trim() === '') {
-            return {
-                success: true,
-                response: 'Merhaba! Sana nasıl yardımcı olabilirim?'
-            };
-        }
-
-        // 1. Yerel komutları dene
-        const localResult = handleLocalCommand(text);
-        if (localResult.handled) {
-            return {
-                success: true,
-                response: localResult.response,
-                source: 'local'
-            };
-        }
-
-        // 2. WebLLM ile dene
-        try {
-            const aiResult = await chatWithWebLLM(text);
-            if (aiResult.success) {
-                return {
-                    success: true,
-                    response: aiResult.response,
-                    source: 'webllm'
-                };
-            } else {
-                return {
-                    success: true,
-                    response: '⚠️ TinyLlama modeli yüklenemedi. ' +
-                              '📝 Hafıza komutlarım (isim, oyun, yer) çalışıyor.\n\n' +
-                              '💡 **Öneri:** Chrome veya Edge kullanmayı dene.'
-                };
-            }
-        } catch (error) {
-            console.error('AI Core hatası:', error);
-            return {
-                success: true,
-                response: 'JARVIS çalışıyor ama AI modeli yüklenemedi.\n' +
-                          '✅ Hafıza komutları çalışıyor (isim, oyun, yer).'
-            };
-        }
-    }
-
-    // ---- handleLocalCommand'un tam hali ----
+    // Yerel komut işleyici (tam hali)
     function handleLocalCommand(text) {
         // İsim kaydetme
         for (let pattern of PATTERNS.nameSet) {
@@ -334,7 +215,7 @@ const AICore = (function() {
 - 🎤 Mikrofon butonuna basarak sesli komut verebilirsin
 
 💬 **Sohbet:**
-- Normal sohbet için TinyLlama AI kullanılır
+- Normal sohbet için Transformers.js AI kullanılır
 - "Bana bir şiir yaz", "Fıkra anlat" gibi komutlar çalışır`
                 };
             }
@@ -342,13 +223,117 @@ const AICore = (function() {
         return { handled: false };
     }
 
-    // Public API
+    // Transformers.js ile sohbet
+    async function chatWithTransformers(text) {
+        try {
+            if (!isModelLoaded && !isLoading) {
+                await loadModel();
+            }
+
+            if (!isModelLoaded) {
+                throw new Error('Model yüklenemedi');
+            }
+
+            const result = await pipeline(text, {
+                max_new_tokens: 200,
+                temperature: 0.7
+            });
+
+            return {
+                success: true,
+                response: result[0].generated_text
+            };
+
+        } catch (error) {
+            console.error('Transformers hatası:', error);
+            return {
+                success: false,
+                error: error.message || 'AI modeli cevap verirken hata oluştu.'
+            };
+        }
+    }
+
+    // Modeli yükle (Transformers.js)
+    async function loadModel() {
+        try {
+            if (isLoading) return;
+            if (isModelLoaded) return;
+            
+            isLoading = true;
+            loadError = null;
+            
+            console.log('🔄 Transformers.js modeli yükleniyor...');
+            
+            // Transformers.js'i import et
+            const { pipeline: pipelineFn } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.11.0');
+            
+            // Text generation pipeline
+            pipeline = await pipelineFn('text-generation', 'Xenova/tinyllama-1.1b');
+            
+            isModelLoaded = true;
+            isLoading = false;
+            console.log('✅ Transformers.js model yüklendi!');
+            
+        } catch (error) {
+            console.error('❌ Model yükleme hatası:', error);
+            loadError = error;
+            isLoading = false;
+            isModelLoaded = false;
+            throw error;
+        }
+    }
+
+    // Ana think fonksiyonu
+    async function think(text) {
+        if (!text || text.trim() === '') {
+            return {
+                success: true,
+                response: 'Merhaba! Sana nasıl yardımcı olabilirim?'
+            };
+        }
+
+        // 1. Yerel komutları dene
+        const localResult = handleLocalCommand(text);
+        if (localResult.handled) {
+            return {
+                success: true,
+                response: localResult.response,
+                source: 'local'
+            };
+        }
+
+        // 2. Transformers.js ile dene
+        try {
+            const aiResult = await chatWithTransformers(text);
+            if (aiResult.success) {
+                return {
+                    success: true,
+                    response: aiResult.response,
+                    source: 'transformers'
+                };
+            } else {
+                return {
+                    success: true,
+                    response: '⚠️ Transformers.js modeli yüklenemedi. ' +
+                              '📝 Hafıza komutlarım (isim, oyun, yer) çalışıyor.\n\n' +
+                              '💡 **Öneri:** Chrome veya Edge kullanmayı dene.'
+                };
+            }
+        } catch (error) {
+            console.error('AI Core hatası:', error);
+            return {
+                success: true,
+                response: 'JARVIS çalışıyor ama AI modeli yüklenemedi.\n' +
+                          '✅ Hafıza komutları çalışıyor (isim, oyun, yer).'
+            };
+        }
+    }
+
     return {
         think,
         loadModel,
         isModelLoaded: () => isModelLoaded,
         isLoading: () => isLoading,
-        getModelName: () => modelName,
         getLoadError: () => loadError
     };
 })();
