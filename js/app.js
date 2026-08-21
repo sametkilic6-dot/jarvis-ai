@@ -1,7 +1,7 @@
-// app.js - JARVIS v7 (Cloudflare Worker ile)
+// app.js - JARVIS v8 (Worker URL hazır)
 
 const JarvisApp = (function() {
-    // 👇 BURAYA WORKER URL'Nİ YAZ
+    // ✅ Worker URL (senin verdiğin)
     const WORKER_URL = 'https://javirs2apkodu.agitacer6.workers.dev';
 
     const elements = {
@@ -82,7 +82,7 @@ const JarvisApp = (function() {
                 body: JSON.stringify({
                     model: 'deepseek-chat',
                     messages: [
-                        { role: 'system', content: 'Sen JARVIS\'sin.' },
+                        { role: 'system', content: 'Sen JARVIS\'sin. Kullanıcı ile sohbet ediyorsun.' },
                         { role: 'user', content: text }
                     ],
                     stream: false,
@@ -126,9 +126,9 @@ const JarvisApp = (function() {
         updateStatus('processing', 'Düşünüyor...');
 
         try {
-            // 1. Önce yerel komutları dene
-            const localResult = AICore.thinkLocal(text);
-            if (localResult && localResult.handled) {
+            // 1. Önce yerel komutları dene (AICore.think)
+            const localResult = await AICore.think(text);
+            if (localResult && localResult.success && localResult.source === 'local') {
                 addMessage('jarvis', localResult.response, 'local');
                 Memory.add('jarvis', localResult.response);
                 updateStatus('online', 'Hazır');
@@ -196,11 +196,6 @@ const JarvisApp = (function() {
         console.log('☁️ Worker URL:', WORKER_URL);
         setupEventListeners();
         updateStatus('online', 'Hazır');
-
-        // AICore'a yerel komut işleyici ekle
-        if (window.AICore && typeof AICore.setLocalHandler === 'function') {
-            // Bu kısmı sonra düzelteceğiz
-        }
 
         const hasMessages = Memory.count() > 0;
         if (!hasMessages) {
