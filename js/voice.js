@@ -1,13 +1,14 @@
 "use strict";
 
 /*
- * JARVIS VOICE CORE
+ * ==========================================
+ * JARVIS VOICE CORE v2
+ * ==========================================
  *
  * Türkçe:
  * - Speech Recognition
  * - Speech Synthesis
- *
- * Tamamen cihaz/tarayıcı özelliklerini kullanır.
+ * - app.js ile doğrudan bağlantı
  */
 
 const Voice = {
@@ -20,9 +21,9 @@ const Voice = {
 
 
     /*
-     * =====================================================
+     * ==========================================
      * BAŞLAT
-     * =====================================================
+     * ==========================================
      */
 
     init() {
@@ -38,11 +39,6 @@ const Voice = {
             window.SpeechRecognition ||
             window.webkitSpeechRecognition;
 
-
-        /*
-         * Ses tanıma desteklenmiyorsa
-         * konuşma özelliği yine çalışabilir.
-         */
 
         if (Recognition) {
 
@@ -72,7 +68,6 @@ const Voice = {
                     this.listening =
                         true;
 
-
                     this.updateStatus(
                         "Seni dinliyorum..."
                     );
@@ -85,7 +80,6 @@ const Voice = {
 
                     this.listening =
                         false;
-
 
                     this.updateStatus(
                         "Sistemler hazır."
@@ -120,7 +114,15 @@ const Voice = {
                     const text =
                         event
                             .results[0][0]
-                            .transcript;
+                            .transcript
+                            .trim();
+
+
+                    if (!text) {
+
+                        return;
+
+                    }
 
 
                     this.handleCommand(
@@ -136,15 +138,39 @@ const Voice = {
             true;
 
 
+        /*
+         * Ses butonunu bağla.
+         */
+
+        const voiceButton =
+            document.getElementById(
+                "voice-button"
+            );
+
+
+        if (voiceButton) {
+
+            voiceButton.addEventListener(
+                "click",
+                () => {
+
+                    this.listen();
+
+                }
+            );
+
+        }
+
+
         return true;
 
     },
 
 
     /*
-     * =====================================================
+     * ==========================================
      * DİNLE
-     * =====================================================
+     * ==========================================
      */
 
     listen() {
@@ -184,7 +210,7 @@ const Voice = {
         } catch (error) {
 
             console.error(
-                "Voice start error:",
+                "JARVIS Voice başlatma hatası:",
                 error
             );
 
@@ -197,17 +223,27 @@ const Voice = {
 
 
     /*
-     * =====================================================
-     * SESİ METNE GÖNDER
-     * =====================================================
+     * ==========================================
+     * SESİ KOMUTA DÖNÜŞTÜR
+     * ==========================================
      */
 
     handleCommand(text) {
 
-        if (!text) {
+        const command =
+            String(text || "").trim();
+
+
+        if (!command) {
+
             return;
+
         }
 
+
+        /*
+         * Önce input'a yaz.
+         */
 
         const input =
             document.getElementById(
@@ -215,44 +251,54 @@ const Voice = {
             );
 
 
-        if (!input) {
-            return;
+        if (input) {
+
+            input.value =
+                command;
+
         }
-
-
-        input.value =
-            text;
 
 
         /*
-         * app.js içindeki JARVIS
-         * komut motorunu çalıştır.
+         * app.js'deki gerçek komut
+         * motoruna SESLİ KOMUTU
+         * doğrudan gönderiyoruz.
          */
 
         if (
-            typeof JarvisApp !==
-            "undefined" &&
-            typeof JarvisApp.processCommand ===
-            "function"
+            window.JarvisApp &&
+            typeof window.JarvisApp.processCommand ===
+                "function"
         ) {
 
-            JarvisApp.processCommand();
+            window.JarvisApp.processCommand(
+                command
+            );
+
+            return;
 
         }
+
+
+        console.error(
+            "JARVIS: JarvisApp.processCommand bulunamadı."
+        );
 
     },
 
 
     /*
-     * =====================================================
+     * ==========================================
      * KONUŞ
-     * =====================================================
+     * ==========================================
      */
 
     speak(text) {
 
         if (!text) {
+
             return;
+
         }
 
 
@@ -265,16 +311,12 @@ const Voice = {
         }
 
 
-        /*
-         * Önceki konuşmayı durdur.
-         */
-
         window.speechSynthesis.cancel();
 
 
         const utterance =
             new SpeechSynthesisUtterance(
-                text
+                String(text)
             );
 
 
@@ -302,23 +344,23 @@ const Voice = {
 
 
     /*
-     * =====================================================
-     * DURUM
-     * =====================================================
+     * ==========================================
+     * DURUM GÜNCELLE
+     * ==========================================
      */
 
     updateStatus(text) {
 
         const status =
             document.getElementById(
-                "system-status"
+                "status-text"
             );
 
 
         if (status) {
 
             status.textContent =
-                text;
+                String(text || "");
 
         }
 
@@ -326,9 +368,9 @@ const Voice = {
 
 
     /*
-     * =====================================================
-     * DESTEK DURUMU
-     * =====================================================
+     * ==========================================
+     * DURUM
+     * ==========================================
      */
 
     getStatus() {
@@ -355,12 +397,22 @@ const Voice = {
 
 
 /*
- * Ses sistemini hazırla.
+ * ==========================================
+ * BAŞLAT
+ * ==========================================
  */
 
 Voice.init();
 
 
+/*
+ * GLOBAL ERİŞİM
+ */
+
+window.Voice =
+    Voice;
+
+
 console.log(
-    "JARVIS Voice Core aktif."
+    "🎙️ JARVIS Voice Core v2 aktif."
 );
