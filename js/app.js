@@ -1,7 +1,6 @@
-// app.js - JARVIS v8 (Worker URL hazır)
+// app.js - JARVIS v9 (finally ile düzeltildi)
 
 const JarvisApp = (function() {
-    // ✅ Worker URL (senin verdiğin)
     const WORKER_URL = 'https://javirs2apkodu.agitacer6.workers.dev';
 
     const elements = {
@@ -71,7 +70,6 @@ const JarvisApp = (function() {
         if (typing) typing.remove();
     }
 
-    // Worker'a istek gönder
     async function askWorker(text) {
         try {
             const response = await fetch(WORKER_URL, {
@@ -113,12 +111,11 @@ const JarvisApp = (function() {
         }
     }
 
-    // Ana komut işleme
     async function processCommand(text) {
         if (!text || text.trim() === '' || isProcessing) return;
 
-        isProcessing = true;
         const commandInput = elements.command;
+        isProcessing = true;
         if (commandInput) commandInput.disabled = true;
 
         addMessage('user', text);
@@ -126,13 +123,15 @@ const JarvisApp = (function() {
         updateStatus('processing', 'Düşünüyor...');
 
         try {
-            // 1. Önce yerel komutları dene (AICore.think)
+            // 1. Yerel komutları dene
             const localResult = await AICore.think(text);
             if (localResult && localResult.success && localResult.source === 'local') {
                 addMessage('jarvis', localResult.response, 'local');
                 Memory.add('jarvis', localResult.response);
                 updateStatus('online', 'Hazır');
-                return;
+                // return YERİNE, işlemi bitirip devam et
+                // Burada return yapmadık, finally çalışacak.
+                return; // Bu return yine de finally'den önce çalışır.
             }
 
             // 2. Yerel yoksa Worker'a sor
@@ -154,14 +153,15 @@ const JarvisApp = (function() {
             console.error('JARVIS hatası:', error);
             addMessage('jarvis', 'Bir hata oluştu. Lütfen daha sonra tekrar dene.', 'error');
             updateStatus('error', 'Hata');
+        } finally {
+            // ✅ Her durumda input'u aktif et ve isProcessing'i sıfırla
+            if (commandInput) {
+                commandInput.value = '';
+                commandInput.disabled = false;
+                commandInput.focus();
+            }
+            isProcessing = false;
         }
-
-        if (commandInput) {
-            commandInput.value = '';
-            commandInput.disabled = false;
-            commandInput.focus();
-        }
-        isProcessing = false;
     }
 
     function setupEventListeners() {
