@@ -1,42 +1,37 @@
-// ai-core.js - JARVIS AI Core v3 (WebLLM ile)
-// Yerel komutlar + WebLLM entegrasyonu
+// ai-core.js - JARVIS AI Core v4 (Düzeltilmiş)
+// Yerel komutlar + WebLLM entegrasyonu (hata yönetimi geliştirildi)
 
 const AICore = (function() {
-    // WebLLM engine
     let engine = null;
     let isModelLoaded = false;
     let isLoading = false;
-    let modelName = 'Llama-3.2-3B-Instruct-q4f32_1'; // Hafif model
+    let loadError = null;
+    let modelName = 'Llama-3.2-3B-Instruct-q4f32_1';
 
-    // Yerel komut desenleri
+    // Yerel komut desenleri (aynı)
     const PATTERNS = {
-        // İsim kaydetme
         nameSet: [
             /benim adım\s+(.+)/i,
             /adım\s+(.+)/i,
             /ismim\s+(.+)/i
         ],
-        // İsim sorgulama
         nameGet: [
             /benim adım ne\s*/i,
             /adım ne\s*/i,
             /ismim ne\s*/i
         ],
-        // Favori oyun kaydetme
         gameSet: [
             /favori oyunum artık\s+(.+)/i,
             /favori oyunum\s+(.+)/i,
             /en sevdiğim oyun artık\s+(.+)/i,
             /en sevdiğim oyun\s+(.+)/i
         ],
-        // Favori oyun sorgulama
         gameGet: [
             /favori oyunum ne\s*/i,
             /favori oyunum nedir\s*/i,
             /en sevdiğim oyun ne\s*/i,
             /en sevdiğim oyun nedir\s*/i
         ],
-        // Yaşadığı yer kaydetme
         locationSet: [
             /ben (.+)'da yaşıyorum/i,
             /ben (.+)'de yaşıyorum/i,
@@ -44,33 +39,33 @@ const AICore = (function() {
             /ben (.+)'nde yaşıyorum/i,
             /yaşıyorum (.+)/i
         ],
-        // Yaşadığı yer sorgulama
         locationGet: [
             /nerede yaşıyorum\s*/i,
             /yaşadığım yer neresi\s*/i,
             /ikametim neresi\s*/i
         ],
-        // Doğum yeri kaydetme
         birthplaceSet: [
             /doğum yerim\s+(.+)/i,
             /memleketim\s+(.+)/i
         ],
-        // Doğum yeri sorgulama
         birthplaceGet: [
             /doğum yerim neresi\s*/i,
             /memleketim neresi\s*/i,
             /nerede doğdum\s*/i
         ],
-        // Benim hakkımda bilgi
         aboutMe: [
             /benim hakkımda ne biliyorsun\s*/i,
             /beni ne kadar tanıyorsun\s*/i,
             /hakkımda bilgi ver\s*/i
         ],
-        // Hafıza durumu
         memoryStatus: [
             /hafıza durumu\s*/i,
             /hafıza istatistikleri\s*/i
+        ],
+        help: [
+            /yardım\s*/i,
+            /ne yapabilirsin\s*/i,
+            /özelliklerin neler\s*/i
         ]
     };
 
@@ -249,10 +244,41 @@ const AICore = (function() {
             }
         }
 
+        // 11. Yardım
+        for (let pattern of PATTERNS.help) {
+            if (pattern.test(text)) {
+                return {
+                    handled: true,
+                    response: `🤖 JARVIS Yardım Menüsü:
+                    
+📝 **Hafıza Komutları:**
+- "Benim adım [isim]" - Adını kaydeder
+- "Benim adım ne?" - Adını sorar
+- "Favori oyunum artık [oyun]" - Oyunu kaydeder
+- "Favori oyunum ne?" - Oyunu sorar
+- "Ben [yer]'da yaşıyorum" - Yer kaydeder
+- "Nerede yaşıyorum?" - Yeri sorar
+- "Doğum yerim [yer]" - Doğum yeri kaydeder
+- "Doğum yerim neresi?" - Doğum yeri sorar
+
+🧠 **Bilgi Komutları:**
+- "Benim hakkımda ne biliyorsun?" - Tüm bilgileri gösterir
+- "Hafıza durumu" - İstatistikleri gösterir
+
+🔊 **Ses:**
+- 🎤 Mikrofon butonuna basarak sesli komut verebilirsin
+
+💬 **Sohbet:**
+- Normal sohbet için WebLLM AI kullanılır
+- "Bana bir şiir yaz", "Fıkra anlat" gibi komutlar çalışır`
+                };
+            }
+        }
+
         return { handled: false };
     }
 
-    // WebLLM ile sohbet
+    // WebLLM ile sohbet (daha basit)
     async function chatWithWebLLM(text) {
         try {
             if (!isModelLoaded && !isLoading) {
@@ -260,24 +286,11 @@ const AICore = (function() {
             }
 
             if (!isModelLoaded) {
-                return {
-                    success: false,
-                    error: 'Model henüz yüklenmedi. Lütfen bekleyin.'
-                };
+                throw new Error('Model yüklenemedi');
             }
 
-            // Kullanıcı bilgilerini bağlam olarak ekle
-            const name = Memory.getName();
-            const game = Memory.getPreference('favorite_game');
-            const location = Memory.getPersonal('location');
-            
-            let context = 'Kullanıcı ile sohbet ediyorsun.';
-            if (name) context += ` Kullanıcının adı: ${name}.`;
-            if (game) context += ` Kullanıcının favori oyunu: ${game}.`;
-            if (location) context += ` Kullanıcı ${location}'da yaşıyor.`;
-
             const messages = [
-                { role: 'system', content: context },
+                { role: 'system', content: 'Sen JARVIS\'sin. Kullanıcı ile sohbet ediyorsun.' },
                 { role: 'user', content: text }
             ];
 
@@ -295,16 +308,21 @@ const AICore = (function() {
             console.error('WebLLM hatası:', error);
             return {
                 success: false,
-                error: 'AI modeli cevap verirken hata oluştu.'
+                error: error.message || 'AI modeli cevap verirken hata oluştu.'
             };
         }
     }
 
-    // Modeli yükle
+    // Modeli yükle (daha basit, hata yönetimi geliştirildi)
     async function loadModel() {
         try {
             if (isLoading) return;
+            if (isModelLoaded) return;
+            
             isLoading = true;
+            loadError = null;
+            
+            console.log('🔄 WebLLM modeli yükleniyor:', modelName);
             
             // WebLLM'i import et
             const webllm = await import('https://esm.run/@mlc-ai/web-llm');
@@ -317,8 +335,10 @@ const AICore = (function() {
             console.log('✅ WebLLM model yüklendi:', modelName);
             
         } catch (error) {
-            console.error('Model yükleme hatası:', error);
+            console.error('❌ Model yükleme hatası:', error);
+            loadError = error;
             isLoading = false;
+            isModelLoaded = false;
             throw error;
         }
     }
@@ -352,18 +372,34 @@ const AICore = (function() {
                     source: 'webllm'
                 };
             } else {
-                // Model yüklenmemiş veya hata varsa
+                // Model hatası
                 return {
                     success: true,
-                    response: 'Bu soruya cevap vermek için yapay zeka modelini kullanmam gerekiyor. ' +
-                              'Model yükleniyor, lütfen birkaç saniye bekleyip tekrar dene.'
+                    response: '🤔 Bu soruya cevap vermek için AI modelini kullanmam gerekiyor. ' +
+                              'Model yüklenirken bir sorun oluştu.\n\n' +
+                              '💡 **Öneriler:**\n' +
+                              '1. Sayfayı yenileyin\n' +
+                              '2. Başka bir tarayıcı deneyin (Chrome/Edge önerilir)\n' +
+                              '3. WebGPU desteğini kontrol edin\n' +
+                              '4. İnternet bağlantınızı kontrol edin\n\n' +
+                              '📝 Hafıza komutları (isim, oyun, yer) çalışmaya devam eder.'
                 };
             }
         } catch (error) {
             console.error('AI Core hatası:', error);
             return {
                 success: true,
-                response: 'Üzgünüm, şu anda cevap veremiyorum. Lütfen daha sonra tekrar dene.'
+                response: '⚠️ JARVIS şu anda çalışıyor ama AI modeli yüklenemedi.\n\n' +
+                          '✅ **Çalışan özellikler:**\n' +
+                          '• İsim kaydetme/sorgulama\n' +
+                          '• Favori oyun kaydetme/sorgulama\n' +
+                          '• Yaşadığı yer kaydetme/sorgulama\n' +
+                          '• Doğum yeri kaydetme/sorgulama\n' +
+                          '• Hafıza istatistikleri\n\n' +
+                          '🔧 Model yüklenmiyorsa:\n' +
+                          '• Chrome veya Edge kullanın\n' +
+                          '• WebGPU desteğini kontrol edin\n' +
+                          '• Sayfayı yenileyin'
             };
         }
     }
@@ -374,7 +410,8 @@ const AICore = (function() {
         loadModel,
         isModelLoaded: () => isModelLoaded,
         isLoading: () => isLoading,
-        getModelName: () => modelName
+        getModelName: () => modelName,
+        getLoadError: () => loadError
     };
 })();
 
