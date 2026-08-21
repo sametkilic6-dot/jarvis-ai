@@ -1,467 +1,232 @@
-"use strict";
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    const input =
-        document.getElementById("command");
-
-    const send =
-        document.getElementById("send");
-
-    const conversation =
-        document.getElementById("conversation");
-
-
-    const WORKER_URL =
-        "https://jarvis-ai.agitacer6.workers.dev/";
-
-
-    if (!input || !send || !conversation) {
-
-        console.error(
-            "JARVIS: Gerekli arayüz elemanları bulunamadı."
-        );
-
-        return;
-    }
-
-
-    /*
-     * ==========================================
-     * MESAJ GÖSTER
-     * ==========================================
-     */
-
-    function addMessage(text, sender) {
-
-        const message =
-            document.createElement("div");
-
-        message.classList.add(
-            "message",
-            sender === "user"
-                ? "user"
-                : "jarvis"
-        );
-
-
-        if (sender !== "user") {
-
-            const name =
-                document.createElement("div");
-
-            name.className =
-                "message-name";
-
-            name.textContent =
-                "JARVIS";
-
-            message.appendChild(name);
-
-        }
-
-
-        const content =
-            document.createElement("div");
-
-        content.textContent =
-            String(text || "");
-
-        message.appendChild(content);
-
-        conversation.appendChild(message);
-
-        conversation.scrollTop =
-            conversation.scrollHeight;
-
-    }
-
-
-    /*
-     * ==========================================
-     * HAFIZA
-     * ==========================================
-     */
-
-    function getMemory() {
-
-        if (
-            typeof Memory === "undefined"
-        ) {
-
-            return {
-
-                name: null,
-
-                facts: {},
-
-                preferences: {},
-
-                personal: {},
-
-                goals: {},
-
-                recent: []
-
-            };
-
-        }
-
-
-        return {
-
-            name:
-                typeof Memory.getName === "function"
-                    ? Memory.getName()
-                    : null,
-
-            facts:
-                typeof Memory.allFacts === "function"
-                    ? Memory.allFacts()
-                    : {},
-
-            preferences:
-                typeof Memory.allPreferences === "function"
-                    ? Memory.allPreferences()
-                    : {},
-
-            personal:
-                typeof Memory.allPersonal === "function"
-                    ? Memory.allPersonal()
-                    : {},
-
-            goals:
-                typeof Memory.allGoals === "function"
-                    ? Memory.allGoals()
-                    : {},
-
-            recent:
-                typeof Memory.recent === "function"
-                    ? Memory.recent(10)
-                    : []
-
-        };
-
-    }
-
-
-    /*
-     * ==========================================
-     * HAFIZAYA MESAJ KAYDET
-     * ==========================================
-     */
-
-    function saveConversation(
-        userText,
-        jarvisText
-    ) {
-
-        if (
-            typeof Memory === "undefined"
-        ) {
-
-            return;
-
-        }
-
-
-        try {
-
-            if (
-                typeof Memory.add === "function"
-            ) {
-
-                Memory.add(
-                    "user",
-                    userText
-                );
-
-                Memory.add(
-                    "jarvis",
-                    jarvisText
-                );
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "JARVIS hafıza konuşma kayıt hatası:",
-                error
-            );
-
-        }
-
-    }
-
-
-    /*
-     * ==========================================
-     * WORKER
-     * ==========================================
-     */
-
-    async function askWorker(text) {
-
-        const memory =
-            getMemory();
-
-
-        const response =
-            await fetch(
-                WORKER_URL,
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json"
-
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            message:
-                                text,
-
-                            memory:
-                                memory
-
-                        })
-
-                }
-            );
-
-
-        let result;
-
-        try {
-
-            result =
-                await response.json();
-
-        } catch (error) {
-
-            throw new Error(
-                "Worker geçersiz cevap verdi."
-            );
-
-        }
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                result.error ||
-                "Worker hata verdi."
-            );
-
-        }
-
-
-        return (
-            result.response ||
-            "JARVIS cevap vermedi."
-        );
-
-    }
-
-
-    /*
-     * ==========================================
-     * ANA KOMUT MOTORU
-     * ==========================================
-     */
-
-    async function processCommand(text) {
-
-        const message =
-            String(text || "").trim();
-
-
-        if (!message) {
-
-            return;
-
-        }
-
-
-        addMessage(
-            message,
-            "user"
-        );
-
-
-        /*
-         * ======================================
-         * 1. LOCAL AI CORE
-         * ======================================
-         */
-
-        if (
-            typeof AI_CORE !== "undefined" &&
-            typeof AI_CORE.think === "function"
-        ) {
-
-            try {
-
-                const localResult =
-                    await AI_CORE.think(message);
-
-
-                if (
-                    localResult &&
-                    typeof localResult.response === "string" &&
-                    localResult.response.trim() &&
-                    !localResult.response.startsWith(
-                        "Komutunu aldım:"
-                    )
-                ) {
-
-                    const answer =
-                        localResult.response.trim();
-
-
-                    addMessage(
-                        answer,
-                        "jarvis"
-                    );
-
-
-                    saveConversation(
-                        message,
-                        answer
-                    );
-
-
-                    return;
-
-                }
-
-            } catch (error) {
-
-                console.error(
-                    "JARVIS AI Core hatası:",
-                    error
-                );
-
-            }
-
-        }
-
-
-        /*
-         * ======================================
-         * 2. CLOUDFLARE WORKER
-         * ======================================
-         */
-
-        try {
-
-            const answer =
-                await askWorker(message);
-
-
-            addMessage(
-                answer,
-                "jarvis"
-            );
-
-
-            saveConversation(
-                message,
-                answer
-            );
-
-        } catch (error) {
-
-            console.error(
-                "JARVIS Worker hatası:",
-                error
-            );
-
-
-            addMessage(
-                "Bağlantı hatası: " +
-                error.message,
-                "jarvis"
-            );
-
-        }
-
-    }
-
-
-    /*
-     * ==========================================
-     * GLOBAL API
-     * ==========================================
-     *
-     * voice.js bunu kullanabilecek.
-     */
-
-    window.JarvisApp = {
-
-        processCommand
-
+// app.js - JARVIS Uygulama Orkestratörü v3
+// Worker bağlantısı kaldırıldı, tamamen yerel AI Core kullanılıyor
+
+const JarvisApp = (function() {
+    // DOM elementleri
+    const elements = {
+        conversation: document.getElementById('conversation'),
+        command: document.getElementById('command'),
+        send: document.getElementById('send'),
+        voiceButton: document.getElementById('voice-button'),
+        statusDot: document.getElementById('status-dot'),
+        statusText: document.getElementById('status-text')
     };
 
+    let isProcessing = false;
 
-    /*
-     * ==========================================
-     * GÖNDER BUTONU
-     * ==========================================
-     */
-
-    send.addEventListener(
-        "click",
-        () => {
-
-            processCommand(
-                input.value
-            );
-
-            input.value = "";
-
-            input.focus();
-
+    // UI durumunu güncelle
+    function updateStatus(status, text) {
+        if (elements.statusDot) {
+            elements.statusDot.className = `status-dot status-${status}`;
         }
-    );
+        if (elements.statusText) {
+            elements.statusText.textContent = text || status;
+        }
+    }
 
+    // Mesaj ekle (UI)
+    function addMessage(role, text, source = 'local') {
+        if (!elements.conversation) return;
 
-    /*
-     * ==========================================
-     * ENTER
-     * ==========================================
-     */
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${role}`;
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = role === 'user' ? '👤' : '🤖';
+        
+        const content = document.createElement('div');
+        content.className = 'content';
+        
+        const textNode = document.createElement('div');
+        textNode.className = 'text';
+        textNode.textContent = text;
+        
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = source === 'webllm' ? '🤖 AI (Yerel)' : source === 'local' ? '⚡ Yerel' : '📡 JARVIS';
+        meta.style.fontSize = '10px';
+        meta.style.opacity = '0.6';
+        meta.style.marginTop = '4px';
+        
+        content.appendChild(textNode);
+        content.appendChild(meta);
+        messageDiv.appendChild(avatar);
+        messageDiv.appendChild(content);
+        
+        elements.conversation.appendChild(messageDiv);
+        elements.conversation.scrollTop = elements.conversation.scrollHeight;
+    }
 
-    input.addEventListener(
-        "keydown",
-        event => {
+    // Yazıyor göstergesi
+    function showTyping() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message jarvis typing';
+        typingDiv.id = 'typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="avatar">🤖</div>
+            <div class="content">
+                <div class="text">JARVIS yazıyor...</div>
+            </div>
+        `;
+        if (elements.conversation) {
+            elements.conversation.appendChild(typingDiv);
+            elements.conversation.scrollTop = elements.conversation.scrollHeight;
+        }
+    }
 
-            if (
-                event.key === "Enter"
-            ) {
+    function hideTyping() {
+        const typing = document.getElementById('typing-indicator');
+        if (typing) typing.remove();
+    }
 
-                event.preventDefault();
+    // Ana komut işleme
+    async function processCommand(text) {
+        if (!text || text.trim() === '' || isProcessing) return;
 
-                processCommand(
-                    input.value
-                );
+        isProcessing = true;
+        const commandInput = elements.command;
+        if (commandInput) commandInput.disabled = true;
+        
+        // Kullanıcı mesajını ekle
+        addMessage('user', text);
+        Memory.add('user', text);
 
-                input.value = "";
+        // Durumu güncelle
+        updateStatus('processing', 'Düşünüyor...');
 
+        try {
+            // Yazıyor göster
+            showTyping();
+
+            // AI Core'u çağır
+            const result = await AICore.think(text);
+
+            // Yazıyor'u gizle
+            hideTyping();
+
+            // Cevabı ekle
+            if (result.success && result.response) {
+                const source = result.source || 'local';
+                addMessage('jarvis', result.response, source);
+                Memory.add('jarvis', result.response);
+                updateStatus('online', 'Hazır');
+            } else {
+                addMessage('jarvis', 'Üzgünüm, bir hata oluştu. Lütfen tekrar dener misin?', 'error');
+                updateStatus('error', 'Hata');
             }
 
+        } catch (error) {
+            hideTyping();
+            console.error('JARVIS hatası:', error);
+            addMessage('jarvis', 'Bir hata oluştu. Lütfen daha sonra tekrar dene.', 'error');
+            updateStatus('error', 'Hata');
         }
-    );
 
+        // Input'u temizle
+        if (commandInput) {
+            commandInput.value = '';
+            commandInput.disabled = false;
+            commandInput.focus();
+        }
 
-    console.log(
-        "🚀 JARVIS App aktif."
-    );
+        isProcessing = false;
+    }
 
+    // Modeli kontrol et ve yükle
+    async function initializeModel() {
+        try {
+            updateStatus('processing', 'AI modeli yükleniyor...');
+            
+            // Model zaten yüklü mü?
+            if (!AICore.isModelLoaded()) {
+                await AICore.loadModel();
+                updateStatus('online', 'Hazır');
+                addMessage('jarvis', 'Merhaba! Ben JARVIS. Yerel AI modelim hazır. İstediğin her şeyi sorabilirsin. 😊', 'local');
+            } else {
+                updateStatus('online', 'Hazır');
+            }
+        } catch (error) {
+            console.error('Model yükleme hatası:', error);
+            updateStatus('error', 'Model yüklenemedi');
+            addMessage('jarvis', 
+                'AI modeli yüklenirken bir sorun oluştu. ' +
+                'Yine de hafıza işlemlerini ve araçları kullanabilirsin.\n' +
+                'WebLLM modeli için lütfen sayfayı yenile ve tekrar dene.', 
+                'error'
+            );
+        }
+    }
+
+    // Olay dinleyicileri
+    function setupEventListeners() {
+        // Gönder butonu
+        if (elements.send) {
+            elements.send.addEventListener('click', () => {
+                if (elements.command) {
+                    processCommand(elements.command.value);
+                }
+            });
+        }
+
+        // Enter tuşu
+        if (elements.command) {
+            elements.command.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    processCommand(elements.command.value);
+                }
+            });
+        }
+
+        // Ses butonu (voice.js üzerinden)
+        if (elements.voiceButton) {
+            elements.voiceButton.addEventListener('click', () => {
+                if (window.Voice && typeof Voice.startListening === 'function') {
+                    Voice.startListening();
+                } else {
+                    alert('Ses sistemi henüz başlatılmadı.');
+                }
+            });
+        }
+    }
+
+    // Uygulamayı başlat
+    async function init() {
+        console.log('🚀 JARVIS başlatılıyor...');
+        
+        setupEventListeners();
+        
+        // Durumu güncelle
+        updateStatus('connecting', 'Bağlanıyor...');
+
+        // Modeli yükle
+        await initializeModel();
+
+        // Hoşgeldin mesajı (eğer daha önce eklenmediyse)
+        const hasMessages = Memory.count() > 0;
+        if (!hasMessages) {
+            setTimeout(() => {
+                addMessage('jarvis', 'Merhaba! Ben JARVIS. Sana nasıl yardımcı olabilirim?', 'local');
+            }, 500);
+        }
+
+        console.log('✅ JARVIS hazır!');
+    }
+
+    // Public API
+    return {
+        init,
+        processCommand,
+        addMessage,
+        updateStatus
+    };
+})();
+
+// Sayfa yüklendiğinde başlat
+document.addEventListener('DOMContentLoaded', () => {
+    JarvisApp.init();
 });
+
+// Global erişim
+window.JarvisApp = JarvisApp;
