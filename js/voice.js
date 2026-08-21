@@ -1,418 +1,212 @@
-"use strict";
+// voice.js - JARVIS Ses Sistemi v3
+// Düzeltilmiş transcript ve status ID
 
-/*
- * ==========================================
- * JARVIS VOICE CORE v2
- * ==========================================
- *
- * Türkçe:
- * - Speech Recognition
- * - Speech Synthesis
- * - app.js ile doğrudan bağlantı
- */
+const Voice = (function() {
+    let recognition = null;
+    let isListening = false;
+    let synthesis = window.speechSynthesis;
 
-const Voice = {
-
-    recognition: null,
-
-    listening: false,
-
-    initialized: false,
-
-
-    /*
-     * ==========================================
-     * BAŞLAT
-     * ==========================================
-     */
-
-    init() {
-
-        if (this.initialized) {
-
-            return true;
-
+    // Konuşma tanıma başlat
+    function initSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            console.warn('❌ SpeechRecognition desteklenmiyor');
+            updateStatus('error', 'Ses desteği yok');
+            return null;
         }
 
-
-        const Recognition =
-            window.SpeechRecognition ||
-            window.webkitSpeechRecognition;
-
-
-        if (Recognition) {
-
-            this.recognition =
-                new Recognition();
-
-
-            this.recognition.lang =
-                "tr-TR";
-
-
-            this.recognition.continuous =
-                false;
-
-
-            this.recognition.interimResults =
-                false;
-
-
-            this.recognition.maxAlternatives =
-                1;
-
-
-            this.recognition.onstart =
-                () => {
-
-                    this.listening =
-                        true;
-
-                    this.updateStatus(
-                        "Seni dinliyorum..."
-                    );
-
-                };
-
-
-            this.recognition.onend =
-                () => {
-
-                    this.listening =
-                        false;
-
-                    this.updateStatus(
-                        "Sistemler hazır."
-                    );
-
-                };
-
-
-            this.recognition.onerror =
-                event => {
-
-                    console.error(
-                        "JARVIS Voice Error:",
-                        event.error
-                    );
-
-
-                    this.listening =
-                        false;
-
-
-                    this.updateStatus(
-                        "Mikrofon kullanılamadı."
-                    );
-
-                };
-
-
-            this.recognition.onresult =
-                event => {
-
-                    const text =
-                        event
-                            .results[0][0]
-                            .transcript
-                            .trim();
-
-
-                    if (!text) {
-
-                        return;
-
-                    }
-
-
-                    this.handleCommand(
-                        text
-                    );
-
-                };
-
-        }
-
-
-        this.initialized =
-            true;
-
-
-        /*
-         * Ses butonunu bağla.
-         */
-
-        const voiceButton =
-            document.getElementById(
-                "voice-button"
-            );
-
-
-        if (voiceButton) {
-
-            voiceButton.addEventListener(
-                "click",
-                () => {
-
-                    this.listen();
-
-                }
-            );
-
-        }
-
-
-        return true;
-
-    },
-
-
-    /*
-     * ==========================================
-     * DİNLE
-     * ==========================================
-     */
-
-    listen() {
-
-        if (!this.initialized) {
-
-            this.init();
-
-        }
-
-
-        if (!this.recognition) {
-
-            this.updateStatus(
-                "Bu tarayıcı ses tanımayı desteklemiyor."
-            );
-
-
-            return false;
-
-        }
-
-
-        if (this.listening) {
-
-            return false;
-
-        }
-
-
-        try {
-
-            this.recognition.start();
-
-            return true;
-
-        } catch (error) {
-
-            console.error(
-                "JARVIS Voice başlatma hatası:",
-                error
-            );
-
-
-            return false;
-
-        }
-
-    },
-
-
-    /*
-     * ==========================================
-     * SESİ KOMUTA DÖNÜŞTÜR
-     * ==========================================
-     */
-
-    handleCommand(text) {
-
-        const command =
-            String(text || "").trim();
-
-
-        if (!command) {
-
-            return;
-
-        }
-
-
-        /*
-         * Önce input'a yaz.
-         */
-
-        const input =
-            document.getElementById(
-                "command"
-            );
-
-
-        if (input) {
-
-            input.value =
-                command;
-
-        }
-
-
-        /*
-         * app.js'deki gerçek komut
-         * motoruna SESLİ KOMUTU
-         * doğrudan gönderiyoruz.
-         */
-
-        if (
-            window.JarvisApp &&
-            typeof window.JarvisApp.processCommand ===
-                "function"
-        ) {
-
-            window.JarvisApp.processCommand(
-                command
-            );
-
-            return;
-
-        }
-
-
-        console.error(
-            "JARVIS: JarvisApp.processCommand bulunamadı."
-        );
-
-    },
-
-
-    /*
-     * ==========================================
-     * KONUŞ
-     * ==========================================
-     */
-
-    speak(text) {
-
-        if (!text) {
-
-            return;
-
-        }
-
-
-        if (
-            !("speechSynthesis" in window)
-        ) {
-
-            return;
-
-        }
-
-
-        window.speechSynthesis.cancel();
-
-
-        const utterance =
-            new SpeechSynthesisUtterance(
-                String(text)
-            );
-
-
-        utterance.lang =
-            "tr-TR";
-
-
-        utterance.rate =
-            0.95;
-
-
-        utterance.pitch =
-            0.9;
-
-
-        utterance.volume =
-            1;
-
-
-        window.speechSynthesis.speak(
-            utterance
-        );
-
-    },
-
-
-    /*
-     * ==========================================
-     * DURUM GÜNCELLE
-     * ==========================================
-     */
-
-    updateStatus(text) {
-
-        const status =
-            document.getElementById(
-                "status-text"
-            );
-
-
-        if (status) {
-
-            status.textContent =
-                String(text || "");
-
-        }
-
-    },
-
-
-    /*
-     * ==========================================
-     * DURUM
-     * ==========================================
-     */
-
-    getStatus() {
-
-        return {
-
-            initialized:
-                this.initialized,
-
-            listening:
-                this.listening,
-
-            recognition:
-                !!this.recognition,
-
-            synthesis:
-                "speechSynthesis" in window
-
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'tr-TR';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+            isListening = true;
+            updateStatus('listening', 'Dinliyor...');
+            console.log('🎤 Dinleme başladı');
         };
 
+        recognition.onresult = (event) => {
+            let transcript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+                
+                // Eğer nihai sonuçsa
+                if (event.results[i].isFinal) {
+                    console.log('📝 Transcript:', transcript);
+                    
+                    // Doğrudan app.js'ye gönder
+                    if (window.JarvisApp && typeof window.JarvisApp.processCommand === 'function') {
+                        window.JarvisApp.processCommand(transcript);
+                    } else {
+                        console.error('❌ JarvisApp.processCommand bulunamadı');
+                        alert('Sistem henüz başlatılmadı. Lütfen sayfayı yenileyin.');
+                    }
+                    
+                    // Durumu güncelle
+                    updateStatus('online', 'Hazır');
+                    isListening = false;
+                }
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('❌ Ses hatası:', event.error);
+            
+            let statusText = 'Ses hatası';
+            if (event.error === 'not-allowed') {
+                statusText = 'Mikrofon izni reddedildi';
+            } else if (event.error === 'no-speech') {
+                statusText = 'Konuşma algılanmadı';
+                // Tekrar deneme
+                setTimeout(() => {
+                    if (window.JarvisApp) {
+                        window.JarvisApp.updateStatus('online', 'Hazır');
+                    }
+                }, 1000);
+                return;
+            }
+            
+            updateStatus('error', statusText);
+            isListening = false;
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            console.log('🔇 Dinleme bitti');
+            // Eğer app.js durumu yönetiyorsa, onu kullan
+            if (window.JarvisApp && typeof window.JarvisApp.updateStatus === 'function') {
+                window.JarvisApp.updateStatus('online', 'Hazır');
+            } else {
+                updateStatus('online', 'Hazır');
+            }
+        };
+
+        return recognition;
     }
 
-};
+    // Durum güncelleme (app.js ile uyumlu)
+    function updateStatus(status, text) {
+        // Önce app.js üzerinden dene
+        if (window.JarvisApp && typeof window.JarvisApp.updateStatus === 'function') {
+            window.JarvisApp.updateStatus(status, text);
+            return;
+        }
 
+        // Fallback: doğrudan DOM
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        
+        if (statusDot) {
+            statusDot.className = `status-dot status-${status}`;
+        }
+        if (statusText) {
+            statusText.textContent = text || status;
+        }
+    }
 
-/*
- * ==========================================
- * BAŞLAT
- * ==========================================
- */
+    // Dinlemeyi başlat
+    function startListening() {
+        if (!recognition) {
+            recognition = initSpeechRecognition();
+            if (!recognition) {
+                alert('Ses tanıma desteği yok. Lütfen modern bir tarayıcı kullanın.');
+                return;
+            }
+        }
 
-Voice.init();
+        if (isListening) {
+            recognition.stop();
+            return;
+        }
 
+        try {
+            recognition.start();
+        } catch (error) {
+            console.error('❌ Başlatma hatası:', error);
+            // Zaten başlamışsa durdur ve yeniden başlat
+            if (error.message.includes('already started')) {
+                recognition.stop();
+                setTimeout(() => {
+                    recognition.start();
+                }, 200);
+            } else {
+                updateStatus('error', 'Başlatma hatası');
+            }
+        }
+    }
 
-/*
- * GLOBAL ERİŞİM
- */
+    // Dinlemeyi durdur
+    function stopListening() {
+        if (recognition && isListening) {
+            recognition.stop();
+            isListening = false;
+            updateStatus('online', 'Hazır');
+        }
+    }
 
-window.Voice =
-    Voice;
+    // Konuşma sentezi (sesli cevap)
+    function speak(text, language = 'tr-TR') {
+        if (!synthesis) {
+            console.warn('❌ SpeechSynthesis desteklenmiyor');
+            return;
+        }
 
+        // Önceki konuşmayı durdur
+        synthesis.cancel();
 
-console.log(
-    "🎙️ JARVIS Voice Core v2 aktif."
-);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = language;
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        // Türkçe ses seç
+        const voices = synthesis.getVoices();
+        const trVoice = voices.find(v => v.lang.startsWith('tr'));
+        if (trVoice) {
+            utterance.voice = trVoice;
+        }
+
+        synthesis.speak(utterance);
+    }
+
+    // Ses sistemini kontrol et
+    function checkSupport() {
+        const hasRecognition = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+        const hasSynthesis = !!window.speechSynthesis;
+        
+        return {
+            recognition: hasRecognition,
+            synthesis: hasSynthesis,
+            supported: hasRecognition || hasSynthesis
+        };
+    }
+
+    // Public API
+    return {
+        startListening,
+        stopListening,
+        speak,
+        checkSupport,
+        isListening: () => isListening
+    };
+})();
+
+// Global erişim
+window.Voice = Voice;
+
+// Sayfa yüklendiğinde sesleri hazırla
+document.addEventListener('DOMContentLoaded', () => {
+    // Sesleri yükle
+    if (window.speechSynthesis) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
+    }
+});
+
+console.log('🎤 Voice sistemi hazır');
