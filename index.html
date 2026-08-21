@@ -32,10 +32,12 @@
 
     <title>JARVIS</title>
 
+
     <link
         rel="manifest"
         href="./manifest.json"
     >
+
 
     <link
         rel="stylesheet"
@@ -48,6 +50,11 @@
 <body>
 
     <main class="jarvis-app">
+
+
+        <!-- =====================================
+             JARVIS HEADER
+        ====================================== -->
 
         <header class="jarvis-header">
 
@@ -64,6 +71,7 @@
 
             </div>
 
+
             <div
                 id="status-text"
                 class="status-text"
@@ -74,6 +82,11 @@
         </header>
 
 
+
+        <!-- =====================================
+             KONUŞMA ALANI
+        ====================================== -->
+
         <section
             id="conversation"
             class="conversation"
@@ -81,7 +94,13 @@
         ></section>
 
 
+
+        <!-- =====================================
+             KOMUT ALANI
+        ====================================== -->
+
         <section class="command-area">
+
 
             <div class="command-box">
 
@@ -90,9 +109,11 @@
                     type="text"
                     autocomplete="off"
                     autocapitalize="sentences"
+                    spellcheck="true"
                     placeholder="JARVIS'e bir şey sor..."
                     aria-label="JARVIS komutu"
                 >
+
 
                 <button
                     id="send"
@@ -105,6 +126,11 @@
             </div>
 
 
+
+            <!-- =================================
+                 SESLİ KONUŞMA
+            ================================== -->
+
             <button
                 id="voice-button"
                 type="button"
@@ -113,42 +139,75 @@
                 🎙️
             </button>
 
+
         </section>
+
 
     </main>
 
 
-    <!--
-        JARVIS JAVASCRIPT SIRASI
-    -->
+
+    <!-- =========================================
+         JARVIS JAVASCRIPT SİSTEMİ
+         
+         YÜKLEME SIRASI ÖNEMLİDİR
+    ========================================== -->
+
+
+    <!-- 1. HAFIZA -->
 
     <script
-        src="./js/memory.js"
+        src="./js/memory.js?v=5"
     ></script>
 
-    <script
-        src="./js/ai-core.js"
-    ></script>
+
+
+    <!-- 2. AI CORE -->
 
     <script
-        src="./js/tools.js"
+        src="./js/ai-core.js?v=5"
     ></script>
 
-    <script
-        src="./js/security.js"
-    ></script>
+
+
+    <!-- 3. ARAÇLAR -->
 
     <script
-        src="./js/self-improve.js"
+        src="./js/tools.js?v=5"
     ></script>
 
-    <script
-        src="./js/voice.js"
-    ></script>
+
+
+    <!-- 4. GÜVENLİK -->
 
     <script
-        src="./js/app.js"
+        src="./js/security.js?v=5"
     ></script>
+
+
+
+    <!-- 5. KENDİNİ GELİŞTİRME -->
+
+    <script
+        src="./js/self-improve.js?v=5"
+    ></script>
+
+
+
+    <!-- 6. SES SİSTEMİ -->
+
+    <script
+        src="./js/voice.js?v=5"
+    ></script>
+
+
+
+    <!-- 7. ANA UYGULAMA -->
+
+    <script
+        src="./js/app.js?v=5"
+    ></script>
+
 
 
 </body>
