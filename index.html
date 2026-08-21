@@ -51,6 +51,8 @@
         .input-area .voice-btn:hover { background: #ff4444; color: white; box-shadow: 0 0 24px rgba(255,68,68,0.3); }
         .input-area .voice-btn.listening { background: #ff4444; color: white; animation: voicePulse 0.8s infinite; }
         @keyframes voicePulse { 0%,100%{box-shadow:0 0 12px rgba(255,68,68,0.3);} 50%{box-shadow:0 0 32px rgba(255,68,68,0.6);} }
+        .clear-btn { background: #ff4444 !important; color: white !important; font-size: 14px !important; width: auto !important; padding: 0 16px !important; border-radius: 20px !important; }
+        .clear-btn:hover { box-shadow: 0 0 24px rgba(255,68,68,0.4) !important; }
         @media (max-width: 480px) { .message { max-width: 92%; } .message .text { font-size: 14px; padding: 8px 12px; } .input-area { padding: 8px 12px; gap: 8px; } .input-area textarea { font-size: 14px; padding: 8px 14px; min-height: 38px; } .input-area button { width: 38px; height: 38px; font-size: 17px; } .header { padding: 8px 12px; min-height: 48px; } .logo { font-size: 17px; } .status { font-size: 11px; } }
     </style>
 </head>
@@ -67,23 +69,34 @@
         <button class="voice-btn" id="voice-button" title="Sesli Komut">🎤</button>
         <textarea id="command" placeholder="Mesajınızı yazın..." rows="1" autofocus></textarea>
         <button id="send" title="Gönder">➤</button>
+        <button class="clear-btn" id="clear-memory" title="Hafızayı Temizle">🗑️</button>
     </div>
 
-    <!-- SÜRÜM 11 -->
-    <script src="js/memory.js?v=11"></script>
-    <script src="js/ai-core.js?v=11"></script>
-    <script src="js/tools.js?v=11"></script>
-    <script src="js/security.js?v=11"></script>
-    <script src="js/self-improve.js?v=11"></script>
-    <script src="js/voice.js?v=11"></script>
-    <script src="js/app.js?v=11"></script>
+    <!-- SÜRÜM 12 (temizleme butonu eklendi) -->
+    <script src="js/memory.js?v=12"></script>
+    <script src="js/ai-core.js?v=12"></script>
+    <script src="js/tools.js?v=12"></script>
+    <script src="js/security.js?v=12"></script>
+    <script src="js/self-improve.js?v=12"></script>
+    <script src="js/voice.js?v=12"></script>
+    <script src="js/app.js?v=12"></script>
 
     <script>
         document.getElementById('command').addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
         });
-        console.log('🚀 JARVIS v11 yükleniyor...');
+
+        // Hafızayı temizle butonu
+        document.getElementById('clear-memory').addEventListener('click', function() {
+            if (confirm('Tüm hafıza silinecek. Emin misin?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
+
+        console.log('🚀 JARVIS v12 yükleniyor...');
+        console.log('🗑️ Hafızayı temizlemek için çöp butonuna tıkla.');
     </script>
 </body>
 </html>
