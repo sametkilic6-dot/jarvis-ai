@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -10,7 +12,7 @@
 
     <meta
         name="theme-color"
-        content="#03050a"
+        content="#050505"
     >
 
     <meta
@@ -23,134 +25,132 @@
         content="black-translucent"
     >
 
-    <title>JARVIS AI</title>
+    <meta
+        name="apple-mobile-web-app-title"
+        content="JARVIS"
+    >
+
+    <title>JARVIS</title>
+
+    <link
+        rel="manifest"
+        href="./manifest.json"
+    >
 
     <link
         rel="stylesheet"
-        href="style.css?v=4"
+        href="./css/style.css"
     >
+
 </head>
+
 
 <body>
 
-    <div id="app">
+    <main class="jarvis-app">
 
-        <header class="top-bar">
+        <header class="jarvis-header">
 
-            <div class="brand">
+            <div class="jarvis-status">
 
-                <span class="brand-dot"></span>
+                <span
+                    class="status-dot"
+                    id="status-dot"
+                ></span>
 
-                JARVIS
+                <span>
+                    JARVIS
+                </span>
 
             </div>
 
-            <div id="connection-status">
-                ÇEVRİMİÇİ
+            <div
+                id="status-text"
+                class="status-text"
+            >
+                Sistemler çevrimiçi.
             </div>
 
         </header>
 
 
-        <main>
-
-            <section class="core-section">
-
-                <div class="core">
-
-                    <div
-                        class="core-ring ring-1"
-                    ></div>
-
-                    <div
-                        class="core-ring ring-2"
-                    ></div>
-
-                    <div class="core-center">
-                        J
-                    </div>
-
-                </div>
-
-                <h1>
-                    JARVIS
-                </h1>
-
-                <p id="system-status">
-                    Sistemler çevrimiçi.
-                </p>
-
-            </section>
+        <section
+            id="conversation"
+            class="conversation"
+            aria-live="polite"
+        ></section>
 
 
-            <section id="conversation">
+        <section class="command-area">
 
-                <div class="message jarvis">
-
-                    <div class="message-name">
-                        JARVIS
-                    </div>
-
-                    <div>
-                        Merhaba Samet.
-                        Sistemlerim çevrimiçi.
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <section class="command-area">
+            <div class="command-box">
 
                 <input
                     id="command"
                     type="text"
-                    placeholder="JARVIS'e bir komut ver..."
                     autocomplete="off"
+                    autocapitalize="sentences"
+                    placeholder="JARVIS'e bir şey sor..."
+                    aria-label="JARVIS komutu"
                 >
 
                 <button
                     id="send"
                     type="button"
+                    aria-label="Gönder"
                 >
-                    ➤
+                    Gönder
                 </button>
 
-                <button
-                    id="microphone"
-                    type="button"
-                >
-                    🎙️
-                </button>
-
-            </section>
-
-        </main>
+            </div>
 
 
-        <footer>
+            <button
+                id="voice-button"
+                type="button"
+                aria-label="Sesli konuşma"
+            >
+                🎙️
+            </button>
 
-            <span>
-                JARVIS AI
-            </span>
+        </section>
 
-            <span>
-                Türkçe • AI Core
-            </span>
-
-        </footer>
-
-    </div>
+    </main>
 
 
-    <!-- JARVIS DOSYA SIRASI -->
+    <!--
+        JARVIS JAVASCRIPT SIRASI
+    -->
 
-    <script src="js/memory.js?v=4"></script>
+    <script
+        src="./js/memory.js"
+    ></script>
 
-    <script src="js/ai-core.js?v=4"></script>
+    <script
+        src="./js/ai-core.js"
+    ></script>
 
-    <script src="js/app.js?v=4"></script>
+    <script
+        src="./js/tools.js"
+    ></script>
+
+    <script
+        src="./js/security.js"
+    ></script>
+
+    <script
+        src="./js/self-improve.js"
+    ></script>
+
+    <script
+        src="./js/voice.js"
+    ></script>
+
+    <script
+        src="./js/app.js"
+    ></script>
+
 
 </body>
+
 </html>
