@@ -1,536 +1,381 @@
-"use strict";
+// ai-core.js - JARVIS AI Core v3 (WebLLM ile)
+// Yerel komutlar + WebLLM entegrasyonu
 
-const AI_CORE = {
+const AICore = (function() {
+    // WebLLM engine
+    let engine = null;
+    let isModelLoaded = false;
+    let isLoading = false;
+    let modelName = 'Llama-3.2-3B-Instruct-q4f32_1'; // Hafif model
 
-    async think(text) {
+    // Yerel komut desenleri
+    const PATTERNS = {
+        // İsim kaydetme
+        nameSet: [
+            /benim adım\s+(.+)/i,
+            /adım\s+(.+)/i,
+            /ismim\s+(.+)/i
+        ],
+        // İsim sorgulama
+        nameGet: [
+            /benim adım ne\s*/i,
+            /adım ne\s*/i,
+            /ismim ne\s*/i
+        ],
+        // Favori oyun kaydetme
+        gameSet: [
+            /favori oyunum artık\s+(.+)/i,
+            /favori oyunum\s+(.+)/i,
+            /en sevdiğim oyun artık\s+(.+)/i,
+            /en sevdiğim oyun\s+(.+)/i
+        ],
+        // Favori oyun sorgulama
+        gameGet: [
+            /favori oyunum ne\s*/i,
+            /favori oyunum nedir\s*/i,
+            /en sevdiğim oyun ne\s*/i,
+            /en sevdiğim oyun nedir\s*/i
+        ],
+        // Yaşadığı yer kaydetme
+        locationSet: [
+            /ben (.+)'da yaşıyorum/i,
+            /ben (.+)'de yaşıyorum/i,
+            /ben (.+)'nda yaşıyorum/i,
+            /ben (.+)'nde yaşıyorum/i,
+            /yaşıyorum (.+)/i
+        ],
+        // Yaşadığı yer sorgulama
+        locationGet: [
+            /nerede yaşıyorum\s*/i,
+            /yaşadığım yer neresi\s*/i,
+            /ikametim neresi\s*/i
+        ],
+        // Doğum yeri kaydetme
+        birthplaceSet: [
+            /doğum yerim\s+(.+)/i,
+            /memleketim\s+(.+)/i
+        ],
+        // Doğum yeri sorgulama
+        birthplaceGet: [
+            /doğum yerim neresi\s*/i,
+            /memleketim neresi\s*/i,
+            /nerede doğdum\s*/i
+        ],
+        // Benim hakkımda bilgi
+        aboutMe: [
+            /benim hakkımda ne biliyorsun\s*/i,
+            /beni ne kadar tanıyorsun\s*/i,
+            /hakkımda bilgi ver\s*/i
+        ],
+        // Hafıza durumu
+        memoryStatus: [
+            /hafıza durumu\s*/i,
+            /hafıza istatistikleri\s*/i
+        ]
+    };
 
-        const message =
-            String(text || "").trim();
-
-        if (!message) {
-
-            return {
-                response: ""
-            };
-
-        }
-
-
-        /*
-         * ==========================================
-         * NORMALİZASYON
-         * ==========================================
-         */
-
-        const normalized =
-            message
-                .toLocaleLowerCase("tr-TR")
-                .replace(/\s+/g, " ")
-                .trim();
-
-
-        /*
-         * ==========================================
-         * 1. İSİM
-         * ==========================================
-         */
-
-        const nameMatch =
-            message.match(
-                /^(?:benim adım|adım)\s+(.+?)[.!?]?$/iu
-            );
-
-        if (nameMatch) {
-
-            const name =
-                nameMatch[1].trim();
-
-            if (
-                typeof Memory !== "undefined" &&
-                typeof Memory.setName === "function"
-            ) {
-
-                const saved =
-                    Memory.setName(name);
-
-                if (saved) {
-
+    // Yerel komut işleyici
+    function handleLocalCommand(text) {
+        // 1. İsim kaydetme
+        for (let pattern of PATTERNS.nameSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const name = match[1].trim();
+                if (Memory.setName(name)) {
                     return {
-                        response:
-                            `Tamam. Adını ${name} olarak hafızama kaydettim.`
+                        handled: true,
+                        response: `Adını ${name} olarak kaydettim.`
                     };
-
                 }
-
             }
-
-            return {
-                response:
-                    "Adını kaydetmeye çalıştım fakat hafıza kaydı başarısız oldu."
-            };
-
         }
 
-
-        /*
-         * ==========================================
-         * 2. İSİM SORGUSU
-         * ==========================================
-         */
-
-        if (
-            normalized === "benim adım ne" ||
-            normalized === "adım ne" ||
-            normalized === "ismim ne"
-        ) {
-
-            const name =
-                typeof Memory !== "undefined" &&
-                typeof Memory.getName === "function"
-                    ? Memory.getName()
-                    : null;
-
-            if (name) {
-
-                return {
-                    response:
-                        `Adının ${name} olduğunu hatırlıyorum.`
-                };
-
-            }
-
-            return {
-                response:
-                    "Adını hafızamda bulamıyorum."
-            };
-
-        }
-
-
-        /*
-         * ==========================================
-         * 3. FAVORİ OYUN KAYDI
-         * ==========================================
-         */
-
-        const favoriteGameMatch =
-            message.match(
-                /^(?:favori oyunum|en sevdiğim oyun)\s+(?:artık|şimdi|ise)\s+(.+?)[.!?]?$/iu
-            );
-
-        if (favoriteGameMatch) {
-
-            const game =
-                favoriteGameMatch[1].trim();
-
-            if (!game) {
-
-                return {
-                    response:
-                        "Hangi oyunun favorin olduğunu belirtmelisin."
-                };
-
-            }
-
-            if (
-                typeof Memory !== "undefined" &&
-                typeof Memory.addPreference === "function"
-            ) {
-
-                const saved =
-                    Memory.addPreference(
-                        "favorite_game",
-                        game
-                    );
-
-                if (saved) {
-
+        // 2. İsim sorgulama
+        for (let pattern of PATTERNS.nameGet) {
+            if (pattern.test(text)) {
+                const name = Memory.getName();
+                if (name) {
                     return {
-                        response:
-                            `Tamam. Favori oyununu ${game} olarak hafızama kaydettim.`
+                        handled: true,
+                        response: `Adının ${name} olduğunu hatırlıyorum.`
                     };
-
-                }
-
-            }
-
-            return {
-                response:
-                    "Favori oyununu kaydetmeye çalıştım fakat hafıza kaydı başarısız oldu."
-            };
-
-        }
-
-
-        /*
-         * ==========================================
-         * 4. FAVORİ OYUN SORGUSU
-         * ==========================================
-         */
-
-        if (
-            normalized === "favori oyunum ne" ||
-            normalized === "favori oyunum nedir" ||
-            normalized === "en sevdiğim oyun ne" ||
-            normalized === "en sevdiğim oyun nedir"
-        ) {
-
-            const game =
-                typeof Memory !== "undefined" &&
-                typeof Memory.getPreference === "function"
-                    ? Memory.getPreference("favorite_game")
-                    : null;
-
-            if (game) {
-
-                return {
-                    response:
-                        `Favori oyununun ${game} olduğunu hatırlıyorum.`
-                };
-
-            }
-
-            return {
-                response:
-                    "Favori oyununu henüz hafızamda bulamıyorum."
-            };
-
-        }
-
-
-        /*
-         * ==========================================
-         * 5. YAŞADIĞI YER KAYDI
-         * ==========================================
-         */
-
-        const locationMatch =
-            message.match(
-                /^(?:ben|benim)\s+(.+?)['’]?(?:de|da)\s+yaşıyorum[.!?]?$/iu
-            );
-
-        if (locationMatch) {
-
-            const location =
-                locationMatch[1].trim();
-
-            if (!location) {
-
-                return {
-                    response:
-                        "Yaşadığın yeri anlayamadım."
-                };
-
-            }
-
-            if (
-                typeof Memory !== "undefined" &&
-                typeof Memory.addFact === "function"
-            ) {
-
-                const saved =
-                    Memory.addFact(
-                        "location",
-                        location
-                    );
-
-                if (saved) {
-
+                } else {
                     return {
-                        response:
-                            `Tamam. ${location} bölgesinde yaşadığını hafızama kaydettim.`
+                        handled: true,
+                        response: 'Adını henüz hatırlamıyorum. Söyler misin?'
                     };
-
                 }
-
             }
-
-            return {
-                response:
-                    "Yaşadığın yeri kaydetmeye çalıştım fakat hafıza kaydı başarısız oldu."
-            };
-
         }
 
-
-        /*
-         * ==========================================
-         * 6. YAŞADIĞI YER SORGUSU
-         * ==========================================
-         */
-
-        if (
-            normalized === "ben nerede yaşıyorum" ||
-            normalized === "nerede yaşıyorum" ||
-            normalized === "yaşadığım yer neresi"
-        ) {
-
-            const location =
-                typeof Memory !== "undefined" &&
-                typeof Memory.getFact === "function"
-                    ? Memory.getFact("location")
-                    : null;
-
-            if (location) {
-
-                return {
-                    response:
-                        `${location} bölgesinde yaşadığını hatırlıyorum.`
-                };
-
-            }
-
-            return {
-                response:
-                    "Yaşadığın yeri hafızamda bulamıyorum."
-            };
-
-        }
-
-
-        /*
-         * ==========================================
-         * 7. DOĞUM YERİ
-         * ==========================================
-         */
-
-        const birthplaceMatch =
-            message.match(
-                /^(?:doğum yerim|doğduğum yer)\s*[:\-]?\s*(.+?)[.!?]?$/iu
-            );
-
-        if (birthplaceMatch) {
-
-            const birthplace =
-                birthplaceMatch[1].trim();
-
-            if (
-                typeof Memory !== "undefined" &&
-                typeof Memory.addFact === "function"
-            ) {
-
-                const saved =
-                    Memory.addFact(
-                        "birthplace",
-                        birthplace
-                    );
-
-                if (saved) {
-
+        // 3. Favori oyun kaydetme
+        for (let pattern of PATTERNS.gameSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const game = match[1].trim();
+                if (Memory.addPreference('favorite_game', game)) {
                     return {
-                        response:
-                            `Tamam. Doğum yerini ${birthplace} olarak hafızama kaydettim.`
+                        handled: true,
+                        response: `Favori oyununu ${game} olarak kaydettim.`
                     };
-
                 }
-
             }
-
-            return {
-                response:
-                    "Doğum yerini kaydetmeye çalıştım fakat hafıza kaydı başarısız oldu."
-            };
-
         }
 
-
-        /*
-         * ==========================================
-         * 8. DOĞUM YERİ SORGUSU
-         * ==========================================
-         */
-
-        if (
-            normalized === "doğum yerim ne" ||
-            normalized === "doğum yerim neresi" ||
-            normalized === "nerede doğdum"
-        ) {
-
-            const birthplace =
-                typeof Memory !== "undefined" &&
-                typeof Memory.getFact === "function"
-                    ? Memory.getFact("birthplace")
-                    : null;
-
-            if (birthplace) {
-
-                return {
-                    response:
-                        `Doğum yerinin ${birthplace} olduğunu hatırlıyorum.`
-                };
-
+        // 4. Favori oyun sorgulama
+        for (let pattern of PATTERNS.gameGet) {
+            if (pattern.test(text)) {
+                const game = Memory.getPreference('favorite_game');
+                if (game) {
+                    return {
+                        handled: true,
+                        response: `Favori oyununun ${game} olduğunu hatırlıyorum.`
+                    };
+                } else {
+                    return {
+                        handled: true,
+                        response: 'Favori oyununu henüz hatırlamıyorum. Söyler misin?'
+                    };
+                }
             }
-
-            return {
-                response:
-                    "Doğum yerini hafızamda bulamıyorum."
-            };
-
         }
 
-
-        /*
-         * ==========================================
-         * 9. GENEL HAFIZA SORGUSU
-         * ==========================================
-         */
-
-        if (
-            normalized === "benim hakkımda ne biliyorsun" ||
-            normalized === "benim hakkımda ne hatırlıyorsun"
-        ) {
-
-            if (
-                typeof Memory === "undefined"
-            ) {
-
-                return {
-                    response:
-                        "Hafıza sistemi kullanılamıyor."
-                };
-
+        // 5. Yaşadığı yer kaydetme
+        for (let pattern of PATTERNS.locationSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const location = match[1].trim();
+                if (Memory.addPersonal('location', location)) {
+                    return {
+                        handled: true,
+                        response: `Yaşadığın yeri ${location} olarak kaydettim.`
+                    };
+                }
             }
-
-            const name =
-                typeof Memory.getName === "function"
-                    ? Memory.getName()
-                    : null;
-
-            const facts =
-                typeof Memory.allFacts === "function"
-                    ? Memory.allFacts()
-                    : {};
-
-            const preferences =
-                typeof Memory.allPreferences === "function"
-                    ? Memory.allPreferences()
-                    : {};
-
-            const goals =
-                typeof Memory.allGoals === "function"
-                    ? Memory.allGoals()
-                    : {};
-
-            const lines = [];
-
-            if (name) {
-
-                lines.push(
-                    `Adın: ${name}`
-                );
-
-            }
-
-            Object.entries(facts)
-                .forEach(
-                    ([key, value]) => {
-
-                        lines.push(
-                            `${key}: ${value}`
-                        );
-
-                    }
-                );
-
-            Object.entries(preferences)
-                .forEach(
-                    ([key, value]) => {
-
-                        lines.push(
-                            `${key}: ${value}`
-                        );
-
-                    }
-                );
-
-            Object.entries(goals)
-                .forEach(
-                    ([key, value]) => {
-
-                        lines.push(
-                            `${key}: ${value}`
-                        );
-
-                    }
-                );
-
-            if (!lines.length) {
-
-                return {
-                    response:
-                        "Hakkında hafızamda kayıtlı bilgi bulamıyorum."
-                };
-
-            }
-
-            return {
-                response:
-                    "Senin hakkında hatırladıklarım:\n• " +
-                    lines.join("\n• ")
-            };
-
         }
 
-
-        /*
-         * ==========================================
-         * 10. HAFIZA İSTATİSTİĞİ
-         * ==========================================
-         */
-
-        if (
-            normalized === "hafızanda kaç kayıt var" ||
-            normalized === "kaç hafızan var"
-        ) {
-
-            if (
-                typeof Memory !== "undefined" &&
-                typeof Memory.getStats === "function"
-            ) {
-
-                const stats =
-                    Memory.getStats();
-
-                return {
-                    response:
-                        `Hafızamda ${stats.memories} mesaj ve ${stats.profileItems} profil bilgisi bulunuyor.`
-                };
-
+        // 6. Yaşadığı yer sorgulama
+        for (let pattern of PATTERNS.locationGet) {
+            if (pattern.test(text)) {
+                const location = Memory.getPersonal('location');
+                if (location) {
+                    return {
+                        handled: true,
+                        response: `${location}'da yaşadığını hatırlıyorum.`
+                    };
+                } else {
+                    return {
+                        handled: true,
+                        response: 'Nerede yaşadığını henüz hatırlamıyorum. Söyler misin?'
+                    };
+                }
             }
-
-            return {
-                response:
-                    "Hafıza istatistiklerine şu anda erişemiyorum."
-            };
-
         }
 
+        // 7. Doğum yeri kaydetme
+        for (let pattern of PATTERNS.birthplaceSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const birthplace = match[1].trim();
+                if (Memory.addPersonal('birthplace', birthplace)) {
+                    return {
+                        handled: true,
+                        response: `Doğum yerini ${birthplace} olarak kaydettim.`
+                    };
+                }
+            }
+        }
 
-        /*
-         * ==========================================
-         * 11. GENEL CEVAP
-         * ==========================================
-         */
+        // 8. Doğum yeri sorgulama
+        for (let pattern of PATTERNS.birthplaceGet) {
+            if (pattern.test(text)) {
+                const birthplace = Memory.getPersonal('birthplace');
+                if (birthplace) {
+                    return {
+                        handled: true,
+                        response: `Doğum yerinin ${birthplace} olduğunu hatırlıyorum.`
+                    };
+                } else {
+                    return {
+                        handled: true,
+                        response: 'Doğum yerini henüz hatırlamıyorum. Söyler misin?'
+                    };
+                }
+            }
+        }
 
-        return {
-            response:
-                `Komutunu aldım: ${message}`
-        };
+        // 9. Benim hakkımda bilgi
+        for (let pattern of PATTERNS.aboutMe) {
+            if (pattern.test(text)) {
+                const name = Memory.getName();
+                const game = Memory.getPreference('favorite_game');
+                const location = Memory.getPersonal('location');
+                const birthplace = Memory.getPersonal('birthplace');
+                
+                let info = [];
+                if (name) info.push(`Adın: ${name}`);
+                if (game) info.push(`Favori oyunun: ${game}`);
+                if (location) info.push(`Yaşadığın yer: ${location}`);
+                if (birthplace) info.push(`Doğum yerin: ${birthplace}`);
+                
+                if (info.length === 0) {
+                    return {
+                        handled: true,
+                        response: 'Senin hakkında henüz hiçbir bilgi kaydetmedim. Bana kendinden bahset!'
+                    };
+                }
+                return {
+                    handled: true,
+                    response: `Senin hakkında bildiklerim:\n${info.join('\n')}`
+                };
+            }
+        }
 
+        // 10. Hafıza durumu
+        for (let pattern of PATTERNS.memoryStatus) {
+            if (pattern.test(text)) {
+                const stats = Memory.getStats();
+                return {
+                    handled: true,
+                    response: `📊 Hafıza İstatistikleri:\n` +
+                        `- Toplam Mesaj: ${stats.totalMessages}\n` +
+                        `- Kullanıcı: ${stats.userMessages}\n` +
+                        `- JARVIS: ${stats.jarvisMessages}\n` +
+                        `- Gerçekler: ${stats.profile.factsCount}\n` +
+                        `- Tercihler: ${stats.profile.preferencesCount}\n` +
+                        `- Kişisel Bilgiler: ${stats.profile.personalCount}\n` +
+                        `- Hedefler: ${stats.profile.goalsCount}`
+                };
+            }
+        }
+
+        return { handled: false };
     }
 
-};
+    // WebLLM ile sohbet
+    async function chatWithWebLLM(text) {
+        try {
+            if (!isModelLoaded && !isLoading) {
+                await loadModel();
+            }
 
+            if (!isModelLoaded) {
+                return {
+                    success: false,
+                    error: 'Model henüz yüklenmedi. Lütfen bekleyin.'
+                };
+            }
 
-/*
- * ==========================================
- * GLOBAL ERİŞİM
- * ==========================================
- */
+            // Kullanıcı bilgilerini bağlam olarak ekle
+            const name = Memory.getName();
+            const game = Memory.getPreference('favorite_game');
+            const location = Memory.getPersonal('location');
+            
+            let context = 'Kullanıcı ile sohbet ediyorsun.';
+            if (name) context += ` Kullanıcının adı: ${name}.`;
+            if (game) context += ` Kullanıcının favori oyunu: ${game}.`;
+            if (location) context += ` Kullanıcı ${location}'da yaşıyor.`;
 
-window.AI_CORE = AI_CORE;
+            const messages = [
+                { role: 'system', content: context },
+                { role: 'user', content: text }
+            ];
 
+            const response = await engine.chat.completions.create({
+                messages: messages,
+                stream: false
+            });
 
-console.log(
-    "🤖 JARVIS AI Core aktif."
-);
+            return {
+                success: true,
+                response: response.choices[0].message.content
+            };
+
+        } catch (error) {
+            console.error('WebLLM hatası:', error);
+            return {
+                success: false,
+                error: 'AI modeli cevap verirken hata oluştu.'
+            };
+        }
+    }
+
+    // Modeli yükle
+    async function loadModel() {
+        try {
+            if (isLoading) return;
+            isLoading = true;
+            
+            // WebLLM'i import et
+            const webllm = await import('https://esm.run/@mlc-ai/web-llm');
+            
+            engine = new webllm.Engine();
+            await engine.reload(modelName);
+            
+            isModelLoaded = true;
+            isLoading = false;
+            console.log('✅ WebLLM model yüklendi:', modelName);
+            
+        } catch (error) {
+            console.error('Model yükleme hatası:', error);
+            isLoading = false;
+            throw error;
+        }
+    }
+
+    // Ana think fonksiyonu
+    async function think(text) {
+        if (!text || text.trim() === '') {
+            return {
+                success: true,
+                response: 'Merhaba! Sana nasıl yardımcı olabilirim?'
+            };
+        }
+
+        // 1. Önce yerel komutları dene
+        const localResult = handleLocalCommand(text);
+        if (localResult.handled) {
+            return {
+                success: true,
+                response: localResult.response,
+                source: 'local'
+            };
+        }
+
+        // 2. Yerel komut yoksa WebLLM'yi dene
+        try {
+            const aiResult = await chatWithWebLLM(text);
+            if (aiResult.success) {
+                return {
+                    success: true,
+                    response: aiResult.response,
+                    source: 'webllm'
+                };
+            } else {
+                // Model yüklenmemiş veya hata varsa
+                return {
+                    success: true,
+                    response: 'Bu soruya cevap vermek için yapay zeka modelini kullanmam gerekiyor. ' +
+                              'Model yükleniyor, lütfen birkaç saniye bekleyip tekrar dene.'
+                };
+            }
+        } catch (error) {
+            console.error('AI Core hatası:', error);
+            return {
+                success: true,
+                response: 'Üzgünüm, şu anda cevap veremiyorum. Lütfen daha sonra tekrar dene.'
+            };
+        }
+    }
+
+    // Public API
+    return {
+        think,
+        loadModel,
+        isModelLoaded: () => isModelLoaded,
+        isLoading: () => isLoading,
+        getModelName: () => modelName
+    };
+})();
+
+window.AICore = AICore;
