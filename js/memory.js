@@ -2,7 +2,7 @@
 
 const Memory = {
 
-    key: "jarvis_memory_v4",
+    key: "jarvis_memory_v3",
 
     data: [],
 
@@ -14,17 +14,23 @@ const Memory = {
         goals: {}
     },
 
+
     init() {
 
         try {
 
-            const saved = localStorage.getItem(this.key);
+            const saved =
+                localStorage.getItem(this.key);
 
             if (saved) {
 
-                const parsed = JSON.parse(saved);
+                const parsed =
+                    JSON.parse(saved);
 
-                if (parsed && typeof parsed === "object") {
+                if (
+                    parsed &&
+                    typeof parsed === "object"
+                ) {
 
                     this.data =
                         Array.isArray(parsed.data)
@@ -61,12 +67,14 @@ const Memory = {
 
             this.save();
 
-            console.log("🧠 JARVIS Memory v5 yüklendi.");
+            console.log(
+                "🧠 JARVIS Memory başarıyla yüklendi."
+            );
 
         } catch (error) {
 
             console.error(
-                "JARVIS Memory başlatma hatası:",
+                "JARVIS Memory yükleme hatası:",
                 error
             );
 
@@ -85,9 +93,11 @@ const Memory = {
 
                 JSON.stringify({
 
-                    data: this.data,
+                    data:
+                        this.data,
 
-                    profile: this.profile
+                    profile:
+                        this.profile
 
                 })
 
@@ -111,22 +121,31 @@ const Memory = {
 
     add(role, text) {
 
-        if (!text || !String(text).trim()) {
+        if (
+            !text ||
+            !String(text).trim()
+        ) {
+
             return false;
+
         }
 
         this.data.push({
 
-            role: role,
+            role:
+                String(role || ""),
 
-            text: String(text).trim(),
+            text:
+                String(text).trim(),
 
             timestamp:
                 new Date().toISOString()
 
         });
 
-        if (this.data.length > 1000) {
+        if (
+            this.data.length > 1000
+        ) {
 
             this.data =
                 this.data.slice(-1000);
@@ -140,8 +159,13 @@ const Memory = {
 
     setName(name) {
 
-        if (!name || !String(name).trim()) {
+        if (
+            !name ||
+            !String(name).trim()
+        ) {
+
             return false;
+
         }
 
         this.profile.name =
@@ -154,7 +178,10 @@ const Memory = {
 
     getName() {
 
-        return this.profile.name;
+        return (
+            this.profile.name ||
+            null
+        );
 
     },
 
@@ -164,14 +191,24 @@ const Memory = {
         if (
             !key ||
             value === null ||
-            value === undefined ||
-            !String(value).trim()
+            value === undefined
         ) {
+
             return false;
+
+        }
+
+        const cleanValue =
+            String(value).trim();
+
+        if (!cleanValue) {
+
+            return false;
+
         }
 
         this.profile.facts[key] =
-            String(value).trim();
+            cleanValue;
 
         return this.save();
 
@@ -181,13 +218,30 @@ const Memory = {
     getFact(key) {
 
         if (!key) {
+
             return null;
+
         }
 
         return (
             this.profile.facts[key] ||
             null
         );
+
+    },
+
+
+    removeFact(key) {
+
+        if (!key) {
+
+            return false;
+
+        }
+
+        delete this.profile.facts[key];
+
+        return this.save();
 
     },
 
@@ -201,19 +255,6 @@ const Memory = {
     },
 
 
-    removeFact(key) {
-
-        if (!key) {
-            return false;
-        }
-
-        delete this.profile.facts[key];
-
-        return this.save();
-
-    },
-
-
     addPreference(key, value) {
 
         if (
@@ -221,17 +262,24 @@ const Memory = {
             value === null ||
             value === undefined
         ) {
+
             return false;
+
         }
 
         const cleanValue =
             String(value).trim();
 
         if (!cleanValue) {
+
             return false;
+
         }
 
-        if (key === "favorite_game") {
+
+        if (
+            key === "favorite_game"
+        ) {
 
             const normalized =
                 cleanValue
@@ -257,10 +305,14 @@ const Memory = {
 
             ];
 
-            if (invalidValues.includes(normalized)) {
+            if (
+                invalidValues.includes(
+                    normalized
+                )
+            ) {
 
                 console.warn(
-                    "JARVIS: Soru yanlışlıkla favori oyun olarak kaydedilmedi."
+                    "JARVIS: Soru favori oyun olarak kaydedilmedi."
                 );
 
                 return false;
@@ -269,6 +321,7 @@ const Memory = {
 
         }
 
+
         this.profile.preferences[key] =
             cleanValue;
 
@@ -276,7 +329,9 @@ const Memory = {
             this.save();
 
         if (!saved) {
+
             return false;
+
         }
 
         return (
@@ -290,13 +345,30 @@ const Memory = {
     getPreference(key) {
 
         if (!key) {
+
             return null;
+
         }
 
         return (
             this.profile.preferences[key] ||
             null
         );
+
+    },
+
+
+    removePreference(key) {
+
+        if (!key) {
+
+            return false;
+
+        }
+
+        delete this.profile.preferences[key];
+
+        return this.save();
 
     },
 
@@ -310,32 +382,29 @@ const Memory = {
     },
 
 
-    removePreference(key) {
-
-        if (!key) {
-            return false;
-        }
-
-        delete this.profile.preferences[key];
-
-        return this.save();
-
-    },
-
-
     addPersonal(key, value) {
 
         if (
             !key ||
             value === null ||
-            value === undefined ||
-            !String(value).trim()
+            value === undefined
         ) {
+
             return false;
+
+        }
+
+        const cleanValue =
+            String(value).trim();
+
+        if (!cleanValue) {
+
+            return false;
+
         }
 
         this.profile.personal[key] =
-            String(value).trim();
+            cleanValue;
 
         return this.save();
 
@@ -345,13 +414,30 @@ const Memory = {
     getPersonal(key) {
 
         if (!key) {
+
             return null;
+
         }
 
         return (
             this.profile.personal[key] ||
             null
         );
+
+    },
+
+
+    removePersonal(key) {
+
+        if (!key) {
+
+            return false;
+
+        }
+
+        delete this.profile.personal[key];
+
+        return this.save();
 
     },
 
@@ -365,32 +451,29 @@ const Memory = {
     },
 
 
-    removePersonal(key) {
-
-        if (!key) {
-            return false;
-        }
-
-        delete this.profile.personal[key];
-
-        return this.save();
-
-    },
-
-
     addGoal(key, value) {
 
         if (
             !key ||
             value === null ||
-            value === undefined ||
-            !String(value).trim()
+            value === undefined
         ) {
+
             return false;
+
+        }
+
+        const cleanValue =
+            String(value).trim();
+
+        if (!cleanValue) {
+
+            return false;
+
         }
 
         this.profile.goals[key] =
-            String(value).trim();
+            cleanValue;
 
         return this.save();
 
@@ -400,13 +483,30 @@ const Memory = {
     getGoal(key) {
 
         if (!key) {
+
             return null;
+
         }
 
         return (
             this.profile.goals[key] ||
             null
         );
+
+    },
+
+
+    removeGoal(key) {
+
+        if (!key) {
+
+            return false;
+
+        }
+
+        delete this.profile.goals[key];
+
+        return this.save();
 
     },
 
@@ -420,22 +520,16 @@ const Memory = {
     },
 
 
-    removeGoal(key) {
-
-        if (!key) {
-            return false;
-        }
-
-        delete this.profile.goals[key];
-
-        return this.save();
-
-    },
-
-
     recent(limit = 10) {
 
-        return this.data.slice(-limit);
+        const safeLimit =
+            Number.isFinite(Number(limit))
+                ? Math.max(0, Number(limit))
+                : 10;
+
+        return this.data.slice(
+            -safeLimit
+        );
 
     },
 
@@ -443,7 +537,9 @@ const Memory = {
     search(query) {
 
         if (!query) {
+
             return [];
+
         }
 
         const text =
@@ -453,11 +549,62 @@ const Memory = {
         return this.data.filter(
 
             item =>
-                String(item.text)
+
+                String(item.text || "")
                     .toLocaleLowerCase("tr-TR")
                     .includes(text)
 
         );
+
+    },
+
+
+    getStats() {
+
+        const preferences =
+            Object.keys(
+                this.profile.preferences
+            ).length;
+
+        const facts =
+            Object.keys(
+                this.profile.facts
+            ).length;
+
+        const personal =
+            Object.keys(
+                this.profile.personal
+            ).length;
+
+        const goals =
+            Object.keys(
+                this.profile.goals
+            ).length;
+
+        return {
+
+            memories:
+                this.data.length,
+
+            conversations:
+                this.data.filter(
+                    item =>
+                        item.role === "user" ||
+                        item.role === "jarvis"
+                ).length,
+
+            profileItems:
+                preferences +
+                facts +
+                personal +
+                goals +
+                (
+                    this.profile.name
+                        ? 1
+                        : 0
+                )
+
+        };
 
     },
 
@@ -476,7 +623,8 @@ const Memory = {
 
         if (
             preferences &&
-            typeof preferences.favorite_game === "string"
+            typeof preferences.favorite_game ===
+                "string"
         ) {
 
             const normalized =
@@ -505,7 +653,9 @@ const Memory = {
             ];
 
             if (
-                invalidValues.includes(normalized)
+                invalidValues.includes(
+                    normalized
+                )
             ) {
 
                 delete preferences.favorite_game;
@@ -552,6 +702,7 @@ const Memory = {
 
 
 Memory.init();
+
 
 console.log(
     "🧠 JARVIS Memory v5 aktif."
