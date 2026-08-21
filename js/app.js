@@ -1,4 +1,4 @@
-// app.js - JARVIS v10 (Worker hatası düzeltildi)
+// app.js - JARVIS v11 (Worker hatası düzeltildi)
 
 const JarvisApp = (function() {
     const WORKER_URL = 'https://javirs2apkodu.agitacer6.workers.dev';
@@ -53,12 +53,7 @@ const JarvisApp = (function() {
         const typingDiv = document.createElement('div');
         typingDiv.className = 'message jarvis typing';
         typingDiv.id = 'typing-indicator';
-        typingDiv.innerHTML = `
-            <div class="avatar">🤖</div>
-            <div class="content">
-                <div class="text">JARVIS yazıyor...</div>
-            </div>
-        `;
+        typingDiv.innerHTML = `<div class="avatar">🤖</div><div class="content"><div class="text">JARVIS yazıyor...</div></div>`;
         if (elements.conversation) {
             elements.conversation.appendChild(typingDiv);
             elements.conversation.scrollTop = elements.conversation.scrollHeight;
@@ -74,9 +69,7 @@ const JarvisApp = (function() {
         try {
             const response = await fetch(WORKER_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: 'deepseek-chat',
                     messages: [
@@ -90,26 +83,19 @@ const JarvisApp = (function() {
 
             if (!response.ok) {
                 const error = await response.json();
-                // Hata mesajını doğru al
                 const errorMsg = error.error?.message || error.error || JSON.stringify(error);
                 throw new Error(errorMsg);
             }
 
             const data = await response.json();
             if (data.choices && data.choices[0]) {
-                return {
-                    success: true,
-                    response: data.choices[0].message.content
-                };
+                return { success: true, response: data.choices[0].message.content };
             } else {
                 throw new Error('Cevap alınamadı.');
             }
         } catch (error) {
             console.error('Worker hatası:', error);
-            return {
-                success: false,
-                error: error.message || 'Worker hatası oluştu.'
-            };
+            return { success: false, error: error.message || 'Worker hatası oluştu.' };
         }
     }
 
@@ -125,7 +111,6 @@ const JarvisApp = (function() {
         updateStatus('processing', 'Düşünüyor...');
 
         try {
-            // 1. Yerel komutları dene
             const localResult = await AICore.think(text);
             if (localResult && localResult.success && localResult.source === 'local') {
                 addMessage('jarvis', localResult.response, 'local');
@@ -134,7 +119,6 @@ const JarvisApp = (function() {
                 return;
             }
 
-            // 2. Yerel yoksa Worker'a sor
             showTyping();
             const workerResult = await askWorker(text);
             hideTyping();
@@ -166,9 +150,7 @@ const JarvisApp = (function() {
     function setupEventListeners() {
         if (elements.send) {
             elements.send.addEventListener('click', () => {
-                if (elements.command) {
-                    processCommand(elements.command.value);
-                }
+                if (elements.command) processCommand(elements.command.value);
             });
         }
         if (elements.command) {
@@ -191,7 +173,7 @@ const JarvisApp = (function() {
     }
 
     async function init() {
-        console.log('🚀 JARVIS başlatılıyor...');
+        console.log('🚀 JARVIS v11 başlatılıyor...');
         console.log('☁️ Worker URL:', WORKER_URL);
         setupEventListeners();
         updateStatus('online', 'Hazır');
@@ -205,12 +187,7 @@ const JarvisApp = (function() {
         console.log('✅ JARVIS hazır!');
     }
 
-    return {
-        init,
-        processCommand,
-        addMessage,
-        updateStatus
-    };
+    return { init, processCommand, addMessage, updateStatus };
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
