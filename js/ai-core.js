@@ -1,23 +1,13 @@
-// ai-core.js - JARVIS AI Core v10 (Düzeltilmiş isim kaydetme)
+// ai-core.js - JARVIS AI Core v11 (Sorgulama önce)
 
 const AICore = (function() {
     // ---- YEREL KOMUT PATTERN'LERİ ----
     const PATTERNS = {
-        nameSet: [
-            /benim adım\s+(.+)/i,
-            /adım\s+(.+)/i,
-            /ismim\s+(.+)/i
-        ],
+        // ÖNCE SORGULAMA (GET) DESENLERİ
         nameGet: [
             /benim adım ne\s*/i,
             /adım ne\s*/i,
             /ismim ne\s*/i
-        ],
-        gameSet: [
-            /favori oyunum artık\s+(.+)/i,
-            /favori oyunum\s+(.+)/i,
-            /en sevdiğim oyun artık\s+(.+)/i,
-            /en sevdiğim oyun\s+(.+)/i
         ],
         gameGet: [
             /favori oyunum ne\s*/i,
@@ -25,21 +15,10 @@ const AICore = (function() {
             /en sevdiğim oyun ne\s*/i,
             /en sevdiğim oyun nedir\s*/i
         ],
-        locationSet: [
-            /ben (.+)'da yaşıyorum/i,
-            /ben (.+)'de yaşıyorum/i,
-            /ben (.+)'nda yaşıyorum/i,
-            /ben (.+)'nde yaşıyorum/i,
-            /yaşıyorum (.+)/i
-        ],
         locationGet: [
             /nerede yaşıyorum\s*/i,
             /yaşadığım yer neresi\s*/i,
             /ikametim neresi\s*/i
-        ],
-        birthplaceSet: [
-            /doğum yerim\s+(.+)/i,
-            /memleketim\s+(.+)/i
         ],
         birthplaceGet: [
             /doğum yerim neresi\s*/i,
@@ -59,27 +38,35 @@ const AICore = (function() {
             /yardım\s*/i,
             /ne yapabilirsin\s*/i,
             /özelliklerin neler\s*/i
+        ],
+        // SONRA KAYDETME (SET) DESENLERİ
+        nameSet: [
+            /benim adım\s+(.+)/i,
+            /adım\s+(.+)/i,
+            /ismim\s+(.+)/i
+        ],
+        gameSet: [
+            /favori oyunum artık\s+(.+)/i,
+            /favori oyunum\s+(.+)/i,
+            /en sevdiğim oyun artık\s+(.+)/i,
+            /en sevdiğim oyun\s+(.+)/i
+        ],
+        locationSet: [
+            /ben (.+)'da yaşıyorum/i,
+            /ben (.+)'de yaşıyorum/i,
+            /ben (.+)'nda yaşıyorum/i,
+            /ben (.+)'nde yaşıyorum/i,
+            /yaşıyorum (.+)/i
+        ],
+        birthplaceSet: [
+            /doğum yerim\s+(.+)/i,
+            /memleketim\s+(.+)/i
         ]
     };
 
-    // ---- YEREL KOMUT İŞLEYİCİ (ÖZGÜR) ----
+    // ---- YEREL KOMUT İŞLEYİCİ ----
     function handleLocalCommand(text) {
-        // 1. İsim kaydetme (DÜZELTİLDİ)
-        for (let pattern of PATTERNS.nameSet) {
-            const match = text.match(pattern);
-            if (match) {
-                const name = match[1].trim();
-                if (name && name !== '') {
-                    Memory.setName(name);
-                    return { 
-                        handled: true, 
-                        response: `Adını ${name} olarak kaydettim.` 
-                    };
-                }
-            }
-        }
-
-        // 2. İsim sorgulama
+        // 1. İsim sorgulama (ÖNCE)
         for (let pattern of PATTERNS.nameGet) {
             if (pattern.test(text)) {
                 const name = Memory.getName();
@@ -97,22 +84,7 @@ const AICore = (function() {
             }
         }
 
-        // 3. Favori oyun kaydetme
-        for (let pattern of PATTERNS.gameSet) {
-            const match = text.match(pattern);
-            if (match) {
-                const game = match[1].trim();
-                if (game && game !== '') {
-                    Memory.addPreference('favorite_game', game);
-                    return { 
-                        handled: true, 
-                        response: `Favori oyununu ${game} olarak kaydettim.` 
-                    };
-                }
-            }
-        }
-
-        // 4. Favori oyun sorgulama
+        // 2. Favori oyun sorgulama (ÖNCE)
         for (let pattern of PATTERNS.gameGet) {
             if (pattern.test(text)) {
                 const game = Memory.getPreference('favorite_game');
@@ -130,22 +102,7 @@ const AICore = (function() {
             }
         }
 
-        // 5. Yaşadığı yer kaydetme
-        for (let pattern of PATTERNS.locationSet) {
-            const match = text.match(pattern);
-            if (match) {
-                const location = match[1].trim();
-                if (location && location !== '') {
-                    Memory.addPersonal('location', location);
-                    return { 
-                        handled: true, 
-                        response: `Yaşadığın yeri ${location} olarak kaydettim.` 
-                    };
-                }
-            }
-        }
-
-        // 6. Yaşadığı yer sorgulama
+        // 3. Yaşadığı yer sorgulama (ÖNCE)
         for (let pattern of PATTERNS.locationGet) {
             if (pattern.test(text)) {
                 const location = Memory.getPersonal('location');
@@ -163,22 +120,7 @@ const AICore = (function() {
             }
         }
 
-        // 7. Doğum yeri kaydetme
-        for (let pattern of PATTERNS.birthplaceSet) {
-            const match = text.match(pattern);
-            if (match) {
-                const birthplace = match[1].trim();
-                if (birthplace && birthplace !== '') {
-                    Memory.addPersonal('birthplace', birthplace);
-                    return { 
-                        handled: true, 
-                        response: `Doğum yerini ${birthplace} olarak kaydettim.` 
-                    };
-                }
-            }
-        }
-
-        // 8. Doğum yeri sorgulama
+        // 4. Doğum yeri sorgulama (ÖNCE)
         for (let pattern of PATTERNS.birthplaceGet) {
             if (pattern.test(text)) {
                 const birthplace = Memory.getPersonal('birthplace');
@@ -196,7 +138,7 @@ const AICore = (function() {
             }
         }
 
-        // 9. Benim hakkımda bilgi
+        // 5. Benim hakkımda bilgi
         for (let pattern of PATTERNS.aboutMe) {
             if (pattern.test(text)) {
                 const name = Memory.getName();
@@ -223,7 +165,7 @@ const AICore = (function() {
             }
         }
 
-        // 10. Hafıza durumu
+        // 6. Hafıza durumu
         for (let pattern of PATTERNS.memoryStatus) {
             if (pattern.test(text)) {
                 const stats = Memory.getStats();
@@ -241,7 +183,7 @@ const AICore = (function() {
             }
         }
 
-        // 11. Yardım
+        // 7. Yardım
         for (let pattern of PATTERNS.help) {
             if (pattern.test(text)) {
                 return {
@@ -271,6 +213,67 @@ const AICore = (function() {
             }
         }
 
+        // ---- KAYDETME (SET) DESENLERİ (SONRA) ----
+        // 8. İsim kaydetme
+        for (let pattern of PATTERNS.nameSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const name = match[1].trim();
+                if (name && name !== '') {
+                    Memory.setName(name);
+                    return { 
+                        handled: true, 
+                        response: `Adını ${name} olarak kaydettim.` 
+                    };
+                }
+            }
+        }
+
+        // 9. Favori oyun kaydetme
+        for (let pattern of PATTERNS.gameSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const game = match[1].trim();
+                if (game && game !== '') {
+                    Memory.addPreference('favorite_game', game);
+                    return { 
+                        handled: true, 
+                        response: `Favori oyununu ${game} olarak kaydettim.` 
+                    };
+                }
+            }
+        }
+
+        // 10. Yaşadığı yer kaydetme
+        for (let pattern of PATTERNS.locationSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const location = match[1].trim();
+                if (location && location !== '') {
+                    Memory.addPersonal('location', location);
+                    return { 
+                        handled: true, 
+                        response: `Yaşadığın yeri ${location} olarak kaydettim.` 
+                    };
+                }
+            }
+        }
+
+        // 11. Doğum yeri kaydetme
+        for (let pattern of PATTERNS.birthplaceSet) {
+            const match = text.match(pattern);
+            if (match) {
+                const birthplace = match[1].trim();
+                if (birthplace && birthplace !== '') {
+                    Memory.addPersonal('birthplace', birthplace);
+                    return { 
+                        handled: true, 
+                        response: `Doğum yerini ${birthplace} olarak kaydettim.` 
+                    };
+                }
+            }
+        }
+
         return { handled: false };
     }
 
@@ -284,7 +287,6 @@ const AICore = (function() {
             };
         }
 
-        // Yerel komutları dene
         const localResult = handleLocalCommand(text);
         if (localResult.handled) {
             return {
@@ -294,7 +296,6 @@ const AICore = (function() {
             };
         }
 
-        // Yerel komut yoksa, Worker'a yönlendir (app.js halleder)
         return {
             success: false,
             source: 'worker',
@@ -302,10 +303,8 @@ const AICore = (function() {
         };
     }
 
-    // ---- PUBLIC API ----
     return {
         think,
-        // Yardımcı
         handleLocalCommand
     };
 })();
