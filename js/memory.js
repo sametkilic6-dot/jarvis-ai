@@ -1,6 +1,16 @@
+```javascript
 "use strict";
 
 const Memory = {
+
+    /*
+     * ==========================================
+     * JARVIS MEMORY v4
+     * ==========================================
+     *
+     * Aynı v3 anahtarını kullanıyoruz.
+     * Böylece mevcut hafıza kaybolmaz.
+     */
 
     key: "jarvis_memory_v3",
 
@@ -21,6 +31,12 @@ const Memory = {
     },
 
 
+    /*
+     * ==========================================
+     * INIT
+     * ==========================================
+     */
+
     init() {
 
         try {
@@ -28,10 +44,12 @@ const Memory = {
             const saved =
                 localStorage.getItem(this.key);
 
+
             if (saved) {
 
                 const parsed =
                     JSON.parse(saved);
+
 
                 if (parsed) {
 
@@ -40,28 +58,57 @@ const Memory = {
                             ? parsed.data
                             : [];
 
+
                     this.profile = {
 
                         name:
-                            parsed.profile?.name || null,
+                            parsed.profile?.name ||
+                            null,
 
                         preferences:
-                            parsed.profile?.preferences || {},
+                            parsed.profile?.preferences ||
+                            {},
 
                         facts:
-                            parsed.profile?.facts || {},
+                            parsed.profile?.facts ||
+                            {},
 
                         personal:
-                            parsed.profile?.personal || {},
+                            parsed.profile?.personal ||
+                            {},
 
                         goals:
-                            parsed.profile?.goals || {}
+                            parsed.profile?.goals ||
+                            {}
 
                     };
 
                 }
 
             }
+
+
+            /*
+             * ==================================
+             * BOZUK HAFIZA TEMİZLEME
+             * ==================================
+             *
+             * Daha önce yanlışlıkla:
+             *
+             * favorite_game = "ne."
+             *
+             * gibi kayıtlar oluştuysa temizlenir.
+             */
+
+            this.cleanCorruptedMemory();
+
+
+            /*
+             * Hafızayı tekrar kaydet.
+             */
+
+            this.save();
+
 
         } catch (error) {
 
@@ -75,6 +122,79 @@ const Memory = {
     },
 
 
+    /*
+     * ==========================================
+     * BOZUK HAFIZA TEMİZLE
+     * ==========================================
+     */
+
+    cleanCorruptedMemory() {
+
+        const preferences =
+            this.profile.preferences;
+
+
+        if (
+            preferences &&
+            typeof preferences.favorite_game ===
+            "string"
+        ) {
+
+            const game =
+                preferences.favorite_game
+                    .trim()
+                    .toLocaleLowerCase("tr-TR");
+
+
+            /*
+             * Soru kelimelerinin yanlışlıkla
+             * favori oyun olarak kaydedilmesini engelle.
+             */
+
+            const invalidGames = [
+
+                "ne",
+
+                "ne.",
+
+                "nedir",
+
+                "nedir.",
+
+                "hangi",
+
+                "hangi.",
+
+                "favori oyunum ne",
+
+                "favori oyunum ne.",
+
+                "en sevdiğim oyun ne",
+
+                "en sevdiğim oyun ne."
+
+            ];
+
+
+            if (
+                invalidGames.includes(game)
+            ) {
+
+                delete preferences.favorite_game;
+
+            }
+
+        }
+
+    },
+
+
+    /*
+     * ==========================================
+     * SAVE
+     * ==========================================
+     */
+
     save() {
 
         try {
@@ -85,9 +205,11 @@ const Memory = {
 
                 JSON.stringify({
 
-                    data: this.data,
+                    data:
+                        this.data,
 
-                    profile: this.profile
+                    profile:
+                        this.profile
 
                 })
 
@@ -105,6 +227,12 @@ const Memory = {
     },
 
 
+    /*
+     * ==========================================
+     * MESAJ EKLE
+     * ==========================================
+     */
+
     add(role, text) {
 
         if (
@@ -116,9 +244,11 @@ const Memory = {
 
         }
 
+
         this.data.push({
 
-            role: role,
+            role:
+                role,
 
             text:
                 String(text).trim(),
@@ -128,26 +258,40 @@ const Memory = {
 
         });
 
-        if (this.data.length > 1000) {
+
+        if (
+            this.data.length > 1000
+        ) {
 
             this.data =
                 this.data.slice(-1000);
 
         }
 
+
         this.save();
 
     },
 
 
+    /*
+     * ==========================================
+     * İSİM
+     * ==========================================
+     */
+
     setName(name) {
 
         if (!name) {
+
             return;
+
         }
+
 
         this.profile.name =
             String(name).trim();
+
 
         this.save();
 
@@ -161,14 +305,27 @@ const Memory = {
     },
 
 
+    /*
+     * ==========================================
+     * PERSONAL
+     * ==========================================
+     */
+
     addPersonal(key, value) {
 
-        if (!key || !value) {
+        if (
+            !key ||
+            !value
+        ) {
+
             return;
+
         }
+
 
         this.profile.personal[key] =
             String(value).trim();
+
 
         this.save();
 
@@ -178,12 +335,15 @@ const Memory = {
     getPersonal(key) {
 
         if (!key) {
+
             return null;
+
         }
 
+
         return (
-            this.profile.personal[key]
-            || null
+            this.profile.personal[key] ||
+            null
         );
 
     },
@@ -192,212 +352,16 @@ const Memory = {
     removePersonal(key) {
 
         if (!key) {
+
             return;
+
         }
+
 
         delete this.profile.personal[key];
 
-        this.save();
-
-    },
-
-
-    addFact(key, value) {
-
-        if (!key || !value) {
-            return;
-        }
-
-        this.profile.facts[key] =
-            String(value).trim();
 
         this.save();
-
-    },
-
-
-    getFact(key) {
-
-        if (!key) {
-            return null;
-        }
-
-        return (
-            this.profile.facts[key]
-            || null
-        );
-
-    },
-
-
-    removeFact(key) {
-
-        if (!key) {
-            return;
-        }
-
-        delete this.profile.facts[key];
-
-        this.save();
-
-    },
-
-
-    addPreference(key, value) {
-
-        if (!key || !value) {
-            return;
-        }
-
-        this.profile.preferences[key] =
-            String(value).trim();
-
-        this.save();
-
-    },
-
-
-    getPreference(key) {
-
-        if (!key) {
-            return null;
-        }
-
-        return (
-            this.profile.preferences[key]
-            || null
-        );
-
-    },
-
-
-    removePreference(key) {
-
-        if (!key) {
-            return;
-        }
-
-        delete this.profile.preferences[key];
-
-        this.save();
-
-    },
-
-
-    addGoal(key, value) {
-
-        if (!key || !value) {
-            return;
-        }
-
-        this.profile.goals[key] =
-            String(value).trim();
-
-        this.save();
-
-    },
-
-
-    getGoal(key) {
-
-        if (!key) {
-            return null;
-        }
-
-        return (
-            this.profile.goals[key]
-            || null
-        );
-
-    },
-
-
-    removeGoal(key) {
-
-        if (!key) {
-            return;
-        }
-
-        delete this.profile.goals[key];
-
-        this.save();
-
-    },
-
-
-    clearConversation() {
-
-        this.data = [];
-
-        this.save();
-
-    },
-
-
-    clearAll() {
-
-        this.data = [];
-
-        this.profile = {
-
-            name: null,
-
-            preferences: {},
-
-            facts: {},
-
-            personal: {},
-
-            goals: {}
-
-        };
-
-        this.save();
-
-    },
-
-
-    recent(limit = 10) {
-
-        return this.data.slice(-limit);
-
-    },
-
-
-    search(query) {
-
-        if (!query) {
-            return [];
-        }
-
-        const text =
-            String(query).toLowerCase();
-
-        return this.data.filter(item =>
-
-            item.text
-                .toLowerCase()
-                .includes(text)
-
-        );
-
-    },
-
-
-    allFacts() {
-
-        return {
-            ...this.profile.facts
-        };
-
-    },
-
-
-    allPreferences() {
-
-        return {
-            ...this.profile.preferences
-        };
 
     },
 
@@ -411,6 +375,263 @@ const Memory = {
     },
 
 
+    /*
+     * ==========================================
+     * FACTS
+     * ==========================================
+     */
+
+    addFact(key, value) {
+
+        if (
+            !key ||
+            !value
+        ) {
+
+            return;
+
+        }
+
+
+        this.profile.facts[key] =
+            String(value).trim();
+
+
+        this.save();
+
+    },
+
+
+    getFact(key) {
+
+        if (!key) {
+
+            return null;
+
+        }
+
+
+        return (
+            this.profile.facts[key] ||
+            null
+        );
+
+    },
+
+
+    removeFact(key) {
+
+        if (!key) {
+
+            return;
+
+        }
+
+
+        delete this.profile.facts[key];
+
+
+        this.save();
+
+    },
+
+
+    allFacts() {
+
+        return {
+            ...this.profile.facts
+        };
+
+    },
+
+
+    /*
+     * ==========================================
+     * PREFERENCES
+     * ==========================================
+     */
+
+    addPreference(key, value) {
+
+        if (
+            !key ||
+            !value
+        ) {
+
+            return;
+
+        }
+
+
+        const cleanValue =
+            String(value).trim();
+
+
+        /*
+         * FAVORİ OYUN KORUMASI
+         */
+
+        if (
+            key === "favorite_game"
+        ) {
+
+            const invalidValues = [
+
+                "ne",
+
+                "ne.",
+
+                "nedir",
+
+                "nedir.",
+
+                "hangi",
+
+                "hangi.",
+
+                "favori oyunum ne",
+
+                "favori oyunum ne.",
+
+                "en sevdiğim oyun ne",
+
+                "en sevdiğim oyun ne."
+
+            ];
+
+
+            if (
+                invalidValues.includes(
+                    cleanValue
+                        .toLocaleLowerCase("tr-TR")
+                )
+            ) {
+
+                console.warn(
+                    "JARVIS: Geçersiz favori oyun kaydı engellendi:",
+                    cleanValue
+                );
+
+                return;
+
+            }
+
+        }
+
+
+        this.profile.preferences[key] =
+            cleanValue;
+
+
+        this.save();
+
+    },
+
+
+    getPreference(key) {
+
+        if (!key) {
+
+            return null;
+
+        }
+
+
+        return (
+            this.profile.preferences[key] ||
+            null
+        );
+
+    },
+
+
+    removePreference(key) {
+
+        if (!key) {
+
+            return;
+
+        }
+
+
+        delete this.profile.preferences[key];
+
+
+        this.save();
+
+    },
+
+
+    allPreferences() {
+
+        return {
+            ...this.profile.preferences
+        };
+
+    },
+
+
+    /*
+     * ==========================================
+     * GOALS
+     * ==========================================
+     */
+
+    addGoal(key, value) {
+
+        if (
+            !key ||
+            !value
+        ) {
+
+            return;
+
+        }
+
+
+        this.profile.goals[key] =
+            String(value).trim();
+
+
+        this.save();
+
+    },
+
+
+    getGoal(key) {
+
+        if (!key) {
+
+            return null;
+
+        }
+
+
+        return (
+            this.profile.goals[key] ||
+            null
+        );
+
+    },
+
+
+    removeGoal(key) {
+
+        if (!key) {
+
+            return;
+
+        }
+
+
+        delete this.profile.goals[key];
+
+
+        this.save();
+
+    },
+
+
     allGoals() {
 
         return {
@@ -419,6 +640,125 @@ const Memory = {
 
     },
 
+
+    /*
+     * ==========================================
+     * SON MESAJLAR
+     * ==========================================
+     */
+
+    recent(limit = 10) {
+
+        return this.data.slice(-limit);
+
+    },
+
+
+    /*
+     * ==========================================
+     * ARAMA
+     * ==========================================
+     */
+
+    search(query) {
+
+        if (!query) {
+
+            return [];
+
+        }
+
+
+        const text =
+            String(query)
+                .toLocaleLowerCase("tr-TR");
+
+
+        return this.data.filter(
+
+            item =>
+
+                String(item.text)
+                    .toLocaleLowerCase("tr-TR")
+                    .includes(text)
+
+        );
+
+    },
+
+
+    /*
+     * ==========================================
+     * TÜM HAFIZA
+     * ==========================================
+     */
+
+    allFacts() {
+
+        return {
+            ...this.profile.facts
+        };
+
+    },
+
+
+    /*
+     * ==========================================
+     * KONUŞMAYI TEMİZLE
+     * ==========================================
+     */
+
+    clearConversation() {
+
+        this.data = [];
+
+
+        this.save();
+
+    },
+
+
+    /*
+     * ==========================================
+     * HER ŞEYİ TEMİZLE
+     * ==========================================
+     */
+
+    clearAll() {
+
+        this.data = [];
+
+
+        this.profile = {
+
+            name:
+                null,
+
+            preferences:
+                {},
+
+            facts:
+                {},
+
+            personal:
+                {},
+
+            goals:
+                {}
+
+        };
+
+
+        this.save();
+
+    },
+
+
+    /*
+     * ==========================================
+     * SAYI
+     * ==========================================
+     */
 
     count() {
 
@@ -429,9 +769,16 @@ const Memory = {
 };
 
 
+/*
+ * ==========================================
+ * BAŞLAT
+ * ==========================================
+ */
+
 Memory.init();
 
 
 console.log(
-    "🧠 JARVIS Memory v3 aktif."
+    "🧠 JARVIS Memory v4 aktif."
 );
+```
