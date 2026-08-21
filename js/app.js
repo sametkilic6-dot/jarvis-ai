@@ -1,4 +1,4 @@
-// app.js - JARVIS v9 (finally ile düzeltildi)
+// app.js - JARVIS v10 (Worker hatası düzeltildi)
 
 const JarvisApp = (function() {
     const WORKER_URL = 'https://javirs2apkodu.agitacer6.workers.dev';
@@ -90,7 +90,9 @@ const JarvisApp = (function() {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Worker hatası');
+                // Hata mesajını doğru al
+                const errorMsg = error.error?.message || error.error || JSON.stringify(error);
+                throw new Error(errorMsg);
             }
 
             const data = await response.json();
@@ -106,7 +108,7 @@ const JarvisApp = (function() {
             console.error('Worker hatası:', error);
             return {
                 success: false,
-                error: error.message
+                error: error.message || 'Worker hatası oluştu.'
             };
         }
     }
@@ -129,9 +131,7 @@ const JarvisApp = (function() {
                 addMessage('jarvis', localResult.response, 'local');
                 Memory.add('jarvis', localResult.response);
                 updateStatus('online', 'Hazır');
-                // return YERİNE, işlemi bitirip devam et
-                // Burada return yapmadık, finally çalışacak.
-                return; // Bu return yine de finally'den önce çalışır.
+                return;
             }
 
             // 2. Yerel yoksa Worker'a sor
@@ -154,7 +154,6 @@ const JarvisApp = (function() {
             addMessage('jarvis', 'Bir hata oluştu. Lütfen daha sonra tekrar dene.', 'error');
             updateStatus('error', 'Hata');
         } finally {
-            // ✅ Her durumda input'u aktif et ve isProcessing'i sıfırla
             if (commandInput) {
                 commandInput.value = '';
                 commandInput.disabled = false;
