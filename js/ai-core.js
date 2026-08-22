@@ -1,4 +1,4 @@
-// ai-core.js - JARVIS AI Core v17 (KeylessAI + Self-Improve)
+// ai-core.js - JARVIS AI Core v18 (KeylessAI ile sohbet eklendi)
 
 const AICore = (function() {
     const PATTERNS = {
@@ -81,6 +81,49 @@ const AICore = (function() {
             /evet\s*/i
         ]
     };
+
+    // ---- KEYLESSAI İLE SOHBET FONKSİYONU ----
+    async function chatWithAI(text) {
+        try {
+            const response = await fetch('https://keylessai.thryx.workers.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer not-needed'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o',
+                    messages: [
+                        { role: 'system', content: 'Sen JARVIS\'sin. Kullanıcı ile sohbet ediyorsun.' },
+                        { role: 'user', content: text }
+                    ],
+                    stream: false,
+                    max_tokens: 512
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error?.message || 'AI hatası');
+            }
+
+            const data = await response.json();
+            if (data.choices && data.choices[0]) {
+                return {
+                    success: true,
+                    response: data.choices[0].message.content
+                };
+            } else {
+                throw new Error('Cevap alınamadı.');
+            }
+        } catch (error) {
+            console.error('AI hatası:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
 
     function handleLocalCommand(text) {
         // ---- SORGULAMA ----
@@ -282,16 +325,27 @@ const AICore = (function() {
             };
         }
 
-        return {
-            success: false,
-            source: 'ai',
-            message: 'Yerel komut bulunamadı, AI\'a git.'
-        };
+        // Sohbet yeteneği ile AI'ya sor
+        const aiResult = await chatWithAI(text);
+        if (aiResult.success) {
+            return {
+                success: true,
+                response: aiResult.response,
+                source: 'ai'
+            };
+        } else {
+            return {
+                success: true,
+                response: '🤔 Bu komutu anlamadım. Yardım için "Yardım" yazabilirsin.',
+                source: 'local'
+            };
+        }
     }
 
     return {
         think,
-        handleLocalCommand
+        handleLocalCommand,
+        chatWithAI
     };
 })();
 
