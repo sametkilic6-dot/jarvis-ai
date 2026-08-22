@@ -1,4 +1,4 @@
-// ai-core.js - JARVIS AI Core v14 (Self-Improve ile)
+// ai-core.js - JARVIS AI Core v15 (Worker yok, tamamen yerel)
 
 const AICore = (function() {
     const PATTERNS = {
@@ -210,7 +210,6 @@ const AICore = (function() {
         // ---- KENDİNİ GÜNCELLE ----
         for (let pattern of PATTERNS.selfUpdate) {
             if (pattern.test(text)) {
-                // Önce mevcut önerileri kontrol et
                 const pending = SelfImprove.getPendingProposals();
                 if (pending.length > 0) {
                     const proposal = pending[0];
@@ -219,7 +218,6 @@ const AICore = (function() {
                         response: `📋 **Bekleyen bir öneri var:**\n- **${proposal.title}**: ${proposal.description}\n\n💡 **"Ekle"** yazarak onaylayabilirsin.`
                     };
                 }
-                // Yeni analiz yap
                 const missing = SelfImprove.analyze();
                 const newPending = SelfImprove.getPendingProposals();
                 if (newPending.length === 0) {
@@ -283,10 +281,11 @@ const AICore = (function() {
             };
         }
 
+        // Worker yok, yerel komut bulunamadıysa
         return {
-            success: false,
-            source: 'worker',
-            message: 'Yerel komut bulunamadı, Worker\'a git.'
+            success: true,
+            response: '🤔 Bu komutu anlamadım. Yardım için "Yardım" yazabilirsin.',
+            source: 'local'
         };
     }
 
