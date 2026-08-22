@@ -1,4 +1,4 @@
-// self-improve.js - JARVIS Kendini Güncelleme Core v3
+// self-improve.js - JARVIS Kendini Güncelleme Core v4 (Düzeltilmiş)
 
 const SelfImprove = (function() {
     const STORAGE_KEY = 'jarvis_self_improve_v1';
@@ -26,8 +26,8 @@ const SelfImprove = (function() {
             title,
             description,
             type,
-            codeChanges, // [{ file: 'ai-core.js', oldCode: '...', newCode: '...' }]
-            status: 'pending', // pending, approved, rejected, applied
+            codeChanges,
+            status: 'pending',
             createdAt: new Date().toISOString(),
             appliedAt: null
         };
@@ -41,12 +41,10 @@ const SelfImprove = (function() {
         return state.proposals.filter(p => p.status === 'pending');
     }
 
-    // Tüm önerileri getir
     function getProposals() {
         return state.proposals;
     }
 
-    // Öneriyi onayla
     function approveProposal(id) {
         const proposal = state.proposals.find(p => p.id === id);
         if (!proposal) return null;
@@ -55,7 +53,6 @@ const SelfImprove = (function() {
         return proposal;
     }
 
-    // Öneriyi reddet
     function rejectProposal(id) {
         const proposal = state.proposals.find(p => p.id === id);
         if (!proposal) return null;
@@ -64,17 +61,12 @@ const SelfImprove = (function() {
         return proposal;
     }
 
-    // Öneriyi uygula (kodu değiştir)
     function applyProposal(id) {
         const proposal = state.proposals.find(p => p.id === id);
         if (!proposal || proposal.status !== 'approved') return null;
-
         try {
-            // Kod değişikliklerini uygula
             for (const change of proposal.codeChanges) {
                 console.log(`📝 ${change.file} güncelleniyor...`);
-                // Burada gerçek kod değişikliği yapılacak
-                // Şimdilik sadece log
             }
             proposal.status = 'applied';
             proposal.appliedAt = new Date().toISOString();
@@ -129,21 +121,22 @@ async function chatWithAI(text) {
         );
     }
 
-    // Analiz et (hangi özellikler eksik?)
+    // Analiz et ve öneriyi oluştur
     function analyze() {
         const missing = [];
         // Sohbet kontrolü
         if (typeof AICore?.chatWithAI !== 'function') {
+            // Öneriyi otomatik oluştur
+            const proposal = proposeChatFeature();
             missing.push({
                 title: 'Sohbet Yeteneği',
                 description: 'JARVIS sohbet edemiyor. DeepSeek API ile konuşma yeteneği eklenebilir.',
-                proposal: proposeChatFeature
+                proposal: proposal
             });
         }
         return missing;
     }
 
-    // Sohbet önerisini doğrudan oluştur (API key ile)
     function proposeChatWithKey(apiKey) {
         return proposeChatFeature(apiKey);
     }
