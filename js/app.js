@@ -1,7 +1,8 @@
-// app.js - JARVIS v11 (Worker hatası düzeltildi)
+// app.js - JARVIS v14 (KeylessAI ile - API anahtarı yok)
 
 const JarvisApp = (function() {
-    const WORKER_URL = 'https://javirs2apkodu.agitacer6.workers.dev';
+    // KeylessAI endpoint (ücretsiz, anahtarsız)
+    const AI_API_URL = 'https://keylessai.thryx.workers.dev/v1/chat/completions';
 
     const elements = {
         conversation: document.getElementById('conversation'),
@@ -37,7 +38,7 @@ const JarvisApp = (function() {
         textNode.textContent = text;
         const meta = document.createElement('div');
         meta.className = 'meta';
-        meta.textContent = source === 'worker' ? '☁️ Cloud AI' : source === 'local' ? '⚡ Yerel' : '📡 JARVIS';
+        meta.textContent = source === 'ai' ? '🌐 Özgür AI' : source === 'local' ? '⚡ Yerel' : '📡 JARVIS';
         meta.style.fontSize = '10px';
         meta.style.opacity = '0.6';
         meta.style.marginTop = '4px';
@@ -65,13 +66,17 @@ const JarvisApp = (function() {
         if (typing) typing.remove();
     }
 
-    async function askWorker(text) {
+    // KeylessAI ile sohbet (API anahtarı yok!)
+    async function askAI(text) {
         try {
-            const response = await fetch(WORKER_URL, {
+            const response = await fetch(AI_API_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer not-needed'
+                },
                 body: JSON.stringify({
-                    model: 'deepseek-chat',
+                    model: 'gpt-4o',
                     messages: [
                         { role: 'system', content: 'Sen JARVIS\'sin. Kullanıcı ile sohbet ediyorsun.' },
                         { role: 'user', content: text }
@@ -83,8 +88,7 @@ const JarvisApp = (function() {
 
             if (!response.ok) {
                 const error = await response.json();
-                const errorMsg = error.error?.message || error.error || JSON.stringify(error);
-                throw new Error(errorMsg);
+                throw new Error(error.error?.message || 'AI hatası');
             }
 
             const data = await response.json();
@@ -94,8 +98,8 @@ const JarvisApp = (function() {
                 throw new Error('Cevap alınamadı.');
             }
         } catch (error) {
-            console.error('Worker hatası:', error);
-            return { success: false, error: error.message || 'Worker hatası oluştu.' };
+            console.error('AI hatası:', error);
+            return { success: false, error: error.message };
         }
     }
 
@@ -111,6 +115,7 @@ const JarvisApp = (function() {
         updateStatus('processing', 'Düşünüyor...');
 
         try {
+            // 1. Yerel komutları dene
             const localResult = await AICore.think(text);
             if (localResult && localResult.success && localResult.source === 'local') {
                 addMessage('jarvis', localResult.response, 'local');
@@ -119,16 +124,17 @@ const JarvisApp = (function() {
                 return;
             }
 
+            // 2. KeylessAI ile sohbet
             showTyping();
-            const workerResult = await askWorker(text);
+            const aiResult = await askAI(text);
             hideTyping();
 
-            if (workerResult.success) {
-                addMessage('jarvis', workerResult.response, 'worker');
-                Memory.add('jarvis', workerResult.response);
+            if (aiResult.success) {
+                addMessage('jarvis', aiResult.response, 'ai');
+                Memory.add('jarvis', aiResult.response);
                 updateStatus('online', 'Hazır');
             } else {
-                addMessage('jarvis', '❌ Worker hatası: ' + workerResult.error, 'error');
+                addMessage('jarvis', '❌ AI hatası: ' + aiResult.error, 'error');
                 updateStatus('error', 'Hata');
             }
 
@@ -173,15 +179,15 @@ const JarvisApp = (function() {
     }
 
     async function init() {
-        console.log('🚀 JARVIS v11 başlatılıyor...');
-        console.log('☁️ Worker URL:', WORKER_URL);
+        console.log('🚀 JARVIS v14 başlatılıyor...');
+        console.log('🌐 KeylessAI ile ücretsiz, anahtarsız AI!');
         setupEventListeners();
         updateStatus('online', 'Hazır');
 
         const hasMessages = Memory.count() > 0;
         if (!hasMessages) {
             setTimeout(() => {
-                addMessage('jarvis', 'Merhaba! Ben JARVIS. Sana nasıl yardımcı olabilirim?', 'local');
+                addMessage('jarvis', 'Merhaba! Ben JARVIS. Sana nasıl yardımcı olabilirim? (KeylessAI ile özgürüm!)', 'local');
             }, 500);
         }
         console.log('✅ JARVIS hazır!');
