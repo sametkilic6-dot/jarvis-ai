@@ -1,9 +1,7 @@
-// ai-core.js - JARVIS AI Core v13 (Self-Improve ile)
+// ai-core.js - JARVIS AI Core v14 (Self-Improve ile)
 
 const AICore = (function() {
-    // ---- YEREL KOMUT PATTERN'LERİ ----
     const PATTERNS = {
-        // SORGULAMA (GET)
         nameGet: [
             /benim adım ne\s*/i,
             /adım ne\s*/i,
@@ -44,7 +42,6 @@ const AICore = (function() {
             /ne yapabilirsin\s*/i,
             /özelliklerin neler\s*/i
         ],
-        // KAYDETME (SET)
         nameSet: [
             /benim adım\s+(.+)/i,
             /adım\s+(.+)/i,
@@ -72,7 +69,6 @@ const AICore = (function() {
             /doğum yerim\s+(.+)/i,
             /memleketim\s+(.+)/i
         ],
-        // KENDİNİ GÜNCELLE
         selfUpdate: [
             /kendini güncelle\s*/i,
             /kendini geliştir\s*/i,
@@ -87,10 +83,8 @@ const AICore = (function() {
         ]
     };
 
-    // ---- YEREL KOMUT İŞLEYİCİ ----
     function handleLocalCommand(text) {
-        // ---- SORGULAMA (ÖNCE) ----
-        // 1. İsim sorgulama
+        // ---- SORGULAMA ----
         for (let pattern of PATTERNS.nameGet) {
             if (pattern.test(text)) {
                 const name = Memory.getName();
@@ -98,7 +92,6 @@ const AICore = (function() {
                 else return { handled: true, response: 'Adını henüz hatırlamıyorum. Söyler misin?' };
             }
         }
-        // 2. Oyun sorgulama
         for (let pattern of PATTERNS.gameGet) {
             if (pattern.test(text)) {
                 const game = Memory.getPreference('favorite_game');
@@ -106,7 +99,6 @@ const AICore = (function() {
                 else return { handled: true, response: 'Favori oyununu henüz hatırlamıyorum. Söyler misin?' };
             }
         }
-        // 3. Renk sorgulama
         for (let pattern of PATTERNS.colorGet) {
             if (pattern.test(text)) {
                 const color = Memory.getPreference('favorite_color');
@@ -114,7 +106,6 @@ const AICore = (function() {
                 else return { handled: true, response: 'En sevdiğin rengi henüz hatırlamıyorum. Söyler misin?' };
             }
         }
-        // 4. Yer sorgulama
         for (let pattern of PATTERNS.locationGet) {
             if (pattern.test(text)) {
                 const location = Memory.getPersonal('location');
@@ -122,7 +113,6 @@ const AICore = (function() {
                 else return { handled: true, response: 'Nerede yaşadığını henüz hatırlamıyorum. Söyler misin?' };
             }
         }
-        // 5. Doğum yeri sorgulama
         for (let pattern of PATTERNS.birthplaceGet) {
             if (pattern.test(text)) {
                 const birthplace = Memory.getPersonal('birthplace');
@@ -130,7 +120,6 @@ const AICore = (function() {
                 else return { handled: true, response: 'Doğum yerini henüz hatırlamıyorum. Söyler misin?' };
             }
         }
-        // 6. Hakkımda
         for (let pattern of PATTERNS.aboutMe) {
             if (pattern.test(text)) {
                 const name = Memory.getName();
@@ -148,14 +137,12 @@ const AICore = (function() {
                 return { handled: true, response: `Senin hakkında bildiklerim:\n${info.join('\n')}` };
             }
         }
-        // 7. Hafıza durumu
         for (let pattern of PATTERNS.memoryStatus) {
             if (pattern.test(text)) {
                 const stats = Memory.getStats();
                 return { handled: true, response: `📊 Hafıza İstatistikleri:\n- Toplam Mesaj: ${stats.totalMessages}\n- Kullanıcı: ${stats.userMessages}\n- JARVIS: ${stats.jarvisMessages}\n- Gerçekler: ${stats.profile.factsCount}\n- Tercihler: ${stats.profile.preferencesCount}\n- Kişisel Bilgiler: ${stats.profile.personalCount}\n- Hedefler: ${stats.profile.goalsCount}` };
             }
         }
-        // 8. Yardım
         for (let pattern of PATTERNS.help) {
             if (pattern.test(text)) {
                 return { handled: true, response: `🤖 JARVIS Yardım Menüsü:
@@ -183,8 +170,7 @@ const AICore = (function() {
             }
         }
 
-        // ---- KAYDETME (SONRA) ----
-        // 9. İsim kaydetme
+        // ---- KAYDETME ----
         for (let pattern of PATTERNS.nameSet) {
             const match = text.match(pattern);
             if (match) {
@@ -192,7 +178,6 @@ const AICore = (function() {
                 if (name && name !== '') { Memory.setName(name); return { handled: true, response: `Adını ${name} olarak kaydettim.` }; }
             }
         }
-        // 10. Oyun kaydetme
         for (let pattern of PATTERNS.gameSet) {
             const match = text.match(pattern);
             if (match) {
@@ -200,7 +185,6 @@ const AICore = (function() {
                 if (game && game !== '') { Memory.addPreference('favorite_game', game); return { handled: true, response: `Favori oyununu ${game} olarak kaydettim.` }; }
             }
         }
-        // 11. Renk kaydetme
         for (let pattern of PATTERNS.colorSet) {
             const match = text.match(pattern);
             if (match) {
@@ -208,7 +192,6 @@ const AICore = (function() {
                 if (color && color !== '') { Memory.addPreference('favorite_color', color); return { handled: true, response: `En sevdiğin rengi ${color} olarak kaydettim.` }; }
             }
         }
-        // 12. Yer kaydetme
         for (let pattern of PATTERNS.locationSet) {
             const match = text.match(pattern);
             if (match) {
@@ -216,7 +199,6 @@ const AICore = (function() {
                 if (location && location !== '') { Memory.addPersonal('location', location); return { handled: true, response: `Yaşadığın yeri ${location} olarak kaydettim.` }; }
             }
         }
-        // 13. Doğum yeri kaydetme
         for (let pattern of PATTERNS.birthplaceSet) {
             const match = text.match(pattern);
             if (match) {
@@ -226,25 +208,34 @@ const AICore = (function() {
         }
 
         // ---- KENDİNİ GÜNCELLE ----
-        // 14. "Kendini güncelle" komutu
         for (let pattern of PATTERNS.selfUpdate) {
             if (pattern.test(text)) {
+                // Önce mevcut önerileri kontrol et
+                const pending = SelfImprove.getPendingProposals();
+                if (pending.length > 0) {
+                    const proposal = pending[0];
+                    return {
+                        handled: true,
+                        response: `📋 **Bekleyen bir öneri var:**\n- **${proposal.title}**: ${proposal.description}\n\n💡 **"Ekle"** yazarak onaylayabilirsin.`
+                    };
+                }
+                // Yeni analiz yap
                 const missing = SelfImprove.analyze();
-                if (missing.length === 0) {
+                const newPending = SelfImprove.getPendingProposals();
+                if (newPending.length === 0) {
                     return {
                         handled: true,
                         response: '✅ JARVIS şu anda tam donanımlı. Güncellenecek bir şey yok.'
                     };
                 }
-                const proposals = missing.map(m => `- **${m.title}**: ${m.description}`).join('\n');
+                const proposal = newPending[0];
                 return {
                     handled: true,
-                    response: `🔍 **JARVIS eksik özellikler tespit etti:**\n${proposals}\n\n💡 **"Ekle"** yazarak öneriyi onaylayabilirsin.`
+                    response: `🔍 **JARVIS eksik özellik tespit etti:**\n- **${proposal.title}**: ${proposal.description}\n\n💡 **"Ekle"** yazarak öneriyi onaylayabilirsin.`
                 };
             }
         }
 
-        // 15. Öneriyi onayla ("Ekle" / "Onayla")
         for (let pattern of PATTERNS.approveProposal) {
             if (pattern.test(text)) {
                 const pending = SelfImprove.getPendingProposals();
@@ -274,7 +265,6 @@ const AICore = (function() {
         return { handled: false };
     }
 
-    // ---- ANA THINK FONKSİYONU ----
     async function think(text) {
         if (!text || text.trim() === '') {
             return {
@@ -293,16 +283,12 @@ const AICore = (function() {
             };
         }
 
-        // Yerel komut yoksa Worker'a yönlendir
         return {
             success: false,
             source: 'worker',
             message: 'Yerel komut bulunamadı, Worker\'a git.'
         };
     }
-
-    // ---- SOHBET FONKSİYONU (Self-Improve ile eklenecek) ----
-    // Bu fonksiyon SelfImprove tarafından eklenecek
 
     return {
         think,
