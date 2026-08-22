@@ -1,4 +1,4 @@
-// ai-core.js - JARVIS AI Core v15 (Worker yok, tamamen yerel)
+// ai-core.js - JARVIS AI Core v17 (KeylessAI + Self-Improve)
 
 const AICore = (function() {
     const PATTERNS = {
@@ -72,7 +72,6 @@ const AICore = (function() {
         selfUpdate: [
             /kendini güncelle\s*/i,
             /kendini geliştir\s*/i,
-            /kendi kendini güncelle\s*/i,
             /özellik ekle\s*/i
         ],
         approveProposal: [
@@ -166,7 +165,9 @@ const AICore = (function() {
 
 🔄 **Kendini Güncelleme:**
 - "Kendini güncelle" - Eksik özellikleri tespit eder
-- "Ekle" / "Onayla" - Öneriyi uygular` };
+- "Ekle" / "Onayla" - Öneriyi uygular
+
+🌐 **AI Sohbet:** KeylessAI ile ücretsiz, anahtarsız AI!` };
             }
         }
 
@@ -281,11 +282,10 @@ const AICore = (function() {
             };
         }
 
-        // Worker yok, yerel komut bulunamadıysa
         return {
-            success: true,
-            response: '🤔 Bu komutu anlamadım. Yardım için "Yardım" yazabilirsin.',
-            source: 'local'
+            success: false,
+            source: 'ai',
+            message: 'Yerel komut bulunamadı, AI\'a git.'
         };
     }
 
