@@ -1,4 +1,4 @@
-// self-improve.js - JARVIS Kendini Güncelleme Core v2
+// self-improve.js - JARVIS Kendini Güncelleme Core v3
 
 const SelfImprove = (function() {
     const STORAGE_KEY = 'jarvis_self_improve_v1';
@@ -26,7 +26,7 @@ const SelfImprove = (function() {
             title,
             description,
             type,
-            codeChanges, // { file: 'ai-core.js', oldCode: '...', newCode: '...' }
+            codeChanges, // [{ file: 'ai-core.js', oldCode: '...', newCode: '...' }]
             status: 'pending', // pending, approved, rejected, applied
             createdAt: new Date().toISOString(),
             appliedAt: null
@@ -72,9 +72,8 @@ const SelfImprove = (function() {
         try {
             // Kod değişikliklerini uygula
             for (const change of proposal.codeChanges) {
-                // Gerçek kod değişikliği (eval kullanılmıyor)
-                // Burada dosyayı güncelleme mantığı olacak
                 console.log(`📝 ${change.file} güncelleniyor...`);
+                // Burada gerçek kod değişikliği yapılacak
                 // Şimdilik sadece log
             }
             proposal.status = 'applied';
@@ -88,30 +87,41 @@ const SelfImprove = (function() {
     }
 
     // Sohbet eklentisi önerisi oluştur
-    function proposeChatFeature() {
+    function proposeChatFeature(apiKey = 'YOUR_DEEPSEEK_API_KEY') {
         return createProposal(
-            'Sohbet Yeteneği Ekle',
-            'JARVIS\'e DeepSeek API ile sohbet yeteneği ekler. İnternet bağlantısı gerektirir.',
+            'Sohbet Yeteneği Ekle (DeepSeek)',
+            'JARVIS\'e DeepSeek API ile sohbet yeteneği ekler. İnternet bağlantısı ve API anahtarı gerektirir.',
             [
                 {
                     file: 'ai-core.js',
                     oldCode: '// Sohbet kodu burada olacak',
-                    newCode: `// DeepSeek API ile sohbet
+                    newCode: `
+// DeepSeek API ile sohbet
 async function chatWithAI(text) {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer YOUR_API_KEY'
-        },
-        body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages: [{ role: 'user', content: text }],
-            stream: false
-        })
-    });
-    const data = await response.json();
-    return data.choices[0].message.content;
+    try {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${apiKey}'
+            },
+            body: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [{ role: 'user', content: text }],
+                stream: false,
+                max_tokens: 512
+            })
+        });
+        const data = await response.json();
+        if (data.choices && data.choices[0]) {
+            return data.choices[0].message.content;
+        } else {
+            return 'Cevap alınamadı. Lütfen tekrar dener misin?';
+        }
+    } catch (error) {
+        console.error('Sohbet hatası:', error);
+        return 'Sohbet bağlantısı kurulamadı.';
+    }
 }`
                 }
             ],
@@ -133,6 +143,11 @@ async function chatWithAI(text) {
         return missing;
     }
 
+    // Sohbet önerisini doğrudan oluştur (API key ile)
+    function proposeChatWithKey(apiKey) {
+        return proposeChatFeature(apiKey);
+    }
+
     return {
         createProposal,
         getPendingProposals,
@@ -141,6 +156,7 @@ async function chatWithAI(text) {
         rejectProposal,
         applyProposal,
         proposeChatFeature,
+        proposeChatWithKey,
         analyze
     };
 })();
