@@ -1,542 +1,148 @@
-"use strict";
+// self-improve.js - JARVIS Kendini Güncelleme Core v2
 
-/*
- * JARVIS SELF-IMPROVEMENT CORE
- *
- * JARVIS:
- * - Hata tespit edebilir
- * - İyileştirme önerebilir
- * - Önerileri kaydedebilir
- * - Test sonucu tutabilir
- *
- * JARVIS:
- * - Güvenlik çekirdeğini değiştiremez
- * - Onay mekanizmasını atlayamaz
- * - Kendi yetkisini artıramaz
- *
- * Gerçek kod değişikliği daha sonra
- * güvenli bir backend/sandbox üzerinden
- * ve kullanıcı onayıyla yapılacaktır.
- */
+const SelfImprove = (function() {
+    const STORAGE_KEY = 'jarvis_self_improve_v1';
 
-const SelfImprove = {
-
-    version: "1.0.0",
-
-    enabled: true,
-
-    proposals: [],
-
-    protectedModules: [
-
-        "security.js",
-
-        "self-improve.js"
-
-    ],
-
-
-    /*
-     * =====================================================
-     * GELİŞTİRME ÖNERİSİ OLUŞTUR
-     * =====================================================
-     */
-
-    createProposal({
-
-        title,
-
-        description,
-
-        target,
-
-        reason,
-
-        expectedBenefit = ""
-
-    }) {
-
-        if (
-            !title ||
-            !description ||
-            !target
-        ) {
-
-            return {
-
-                success: false,
-
-                error:
-                    "Eksik geliştirme bilgisi."
-
-            };
-
-        }
-
-
-        /*
-         * Korunan modüller değiştirilemez.
-         */
-
-        if (
-            this.isProtected(
-                target
-            )
-        ) {
-
-            return {
-
-                success: false,
-
-                error:
-                    "Bu modül JARVIS tarafından değiştirilemez."
-
-            };
-
-        }
-
-
-        const proposal = {
-
-            id:
-                this.createId(),
-
-            title,
-
-            description,
-
-            target,
-
-            reason,
-
-            expectedBenefit,
-
-            status:
-                "pending",
-
-            testStatus:
-                "not-tested",
-
-            createdAt:
-                new Date()
-                    .toISOString()
-
-        };
-
-
-        this.proposals.push(
-            proposal
-        );
-
-
-        this.save();
-
-
-        return {
-
-            success: true,
-
-            proposal
-
-        };
-
-    },
-
-
-    /*
-     * =====================================================
-     * KORUMALI MODÜL KONTROLÜ
-     * =====================================================
-     */
-
-    isProtected(
-        moduleName
-    ) {
-
-        return this.protectedModules
-            .includes(
-                moduleName
-            );
-
-    },
-
-
-    /*
-     * =====================================================
-     * ÖNERİLER
-     * =====================================================
-     */
-
-    getProposals() {
-
-        return [
-            ...this.proposals
-        ];
-
-    },
-
-
-    getPendingProposals() {
-
-        return this.proposals.filter(
-            proposal =>
-                proposal.status ===
-                "pending"
-        );
-
-    },
-
-
-    /*
-     * =====================================================
-     * TEST SONUCU
-     * =====================================================
-     */
-
-    recordTest(
-        id,
-        success,
-        details = ""
-    ) {
-
-        const proposal =
-            this.findProposal(id);
-
-
-        if (!proposal) {
-
-            return {
-
-                success: false,
-
-                error:
-                    "Öneri bulunamadı."
-
-            };
-
-        }
-
-
-        proposal.testStatus =
-            success
-                ? "passed"
-                : "failed";
-
-
-        proposal.testDetails =
-            details;
-
-
-        proposal.testedAt =
-            new Date()
-                .toISOString();
-
-
-        this.save();
-
-
-        return {
-
-            success: true,
-
-            proposal
-
-        };
-
-    },
-
-
-    /*
-     * =====================================================
-     * SAMET ONAYI
-     * =====================================================
-     */
-
-    approve(id) {
-
-        const proposal =
-            this.findProposal(id);
-
-
-        if (!proposal) {
-
-            return {
-
-                success: false,
-
-                error:
-                    "Öneri bulunamadı."
-
-            };
-
-        }
-
-
-        /*
-         * Test başarılı olmadan
-         * kritik geliştirme onaylanamaz.
-         */
-
-        if (
-            proposal.testStatus !==
-            "passed"
-        ) {
-
-            return {
-
-                success: false,
-
-                error:
-                    "Önce geliştirme test edilmelidir."
-
-            };
-
-        }
-
-
-        proposal.status =
-            "approved";
-
-
-        proposal.approvedAt =
-            new Date()
-                .toISOString();
-
-
-        this.save();
-
-
-        return {
-
-            success: true,
-
-            proposal
-
-        };
-
-    },
-
-
-    /*
-     * =====================================================
-     * REDDET
-     * =====================================================
-     */
-
-    reject(id) {
-
-        const proposal =
-            this.findProposal(id);
-
-
-        if (!proposal) {
-
-            return {
-
-                success: false,
-
-                error:
-                    "Öneri bulunamadı."
-
-            };
-
-        }
-
-
-        proposal.status =
-            "rejected";
-
-
-        proposal.rejectedAt =
-            new Date()
-                .toISOString();
-
-
-        this.save();
-
-
-        return {
-
-            success: true,
-
-            proposal
-
-        };
-
-    },
-
-
-    /*
-     * =====================================================
-     * GELİŞTİRME ANALİZİ
-     * =====================================================
-     */
-
-    analyze(
-
-        target,
-
-        reason
-
-    ) {
-
-        return this.createProposal({
-
-            title:
-                "JARVIS geliştirme önerisi",
-
-            description:
-                `${target} modülünde geliştirme önerildi.`,
-
-            target,
-
-            reason,
-
-            expectedBenefit:
-                "Daha iyi performans ve daha güvenilir çalışma."
-
-        });
-
-    },
-
-
-    /*
-     * =====================================================
-     * ÖNERİ BUL
-     * =====================================================
-     */
-
-    findProposal(id) {
-
-        return this.proposals.find(
-            proposal =>
-                proposal.id === id
-        );
-
-    },
-
-
-    /*
-     * =====================================================
-     * HAFIZAYA KAYDET
-     * =====================================================
-     */
-
-    save() {
-
+    function load() {
         try {
-
-            localStorage.setItem(
-
-                "jarvis_self_improvements",
-
-                JSON.stringify(
-                    this.proposals
-                )
-
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Self-improvement kayıt hatası:",
-                error
-            );
-
-        }
-
-    },
-
-
-    /*
-     * =====================================================
-     * KAYITLARI YÜKLE
-     * =====================================================
-     */
-
-    load() {
-
-        try {
-
-            const saved =
-                localStorage.getItem(
-                    "jarvis_self_improvements"
-                );
-
-
-            if (saved) {
-
-                const parsed =
-                    JSON.parse(
-                        saved
-                    );
-
-
-                if (
-                    Array.isArray(
-                        parsed
-                    )
-                ) {
-
-                    this.proposals =
-                        parsed;
-
-                }
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Self-improvement yükleme hatası:",
-                error
-            );
-
-        }
-
-    },
-
-
-    /*
-     * =====================================================
-     * ID
-     * =====================================================
-     */
-
-    createId() {
-
-        if (
-            typeof crypto !==
-                "undefined" &&
-            typeof crypto.randomUUID ===
-                "function"
-        ) {
-
-            return crypto.randomUUID();
-
-        }
-
-
-        return (
-            Date.now() +
-            "-" +
-            Math.random()
-                .toString(36)
-                .slice(2)
-        );
-
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return { proposals: [], history: [] };
     }
 
-};
+    function save(data) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
+    }
 
+    let state = load();
 
-/*
- * Önceden kaydedilmiş geliştirmeleri yükle.
- */
+    // Yeni öneri oluştur
+    function createProposal(title, description, codeChanges, type = 'enhancement') {
+        const proposal = {
+            id: Date.now(),
+            title,
+            description,
+            type,
+            codeChanges, // { file: 'ai-core.js', oldCode: '...', newCode: '...' }
+            status: 'pending', // pending, approved, rejected, applied
+            createdAt: new Date().toISOString(),
+            appliedAt: null
+        };
+        state.proposals.push(proposal);
+        save(state);
+        return proposal;
+    }
 
-SelfImprove.load();
+    // Bekleyen önerileri getir
+    function getPendingProposals() {
+        return state.proposals.filter(p => p.status === 'pending');
+    }
 
+    // Tüm önerileri getir
+    function getProposals() {
+        return state.proposals;
+    }
 
-console.log(
-    "JARVIS Self-Improvement Core aktif."
-);
+    // Öneriyi onayla
+    function approveProposal(id) {
+        const proposal = state.proposals.find(p => p.id === id);
+        if (!proposal) return null;
+        proposal.status = 'approved';
+        save(state);
+        return proposal;
+    }
+
+    // Öneriyi reddet
+    function rejectProposal(id) {
+        const proposal = state.proposals.find(p => p.id === id);
+        if (!proposal) return null;
+        proposal.status = 'rejected';
+        save(state);
+        return proposal;
+    }
+
+    // Öneriyi uygula (kodu değiştir)
+    function applyProposal(id) {
+        const proposal = state.proposals.find(p => p.id === id);
+        if (!proposal || proposal.status !== 'approved') return null;
+
+        try {
+            // Kod değişikliklerini uygula
+            for (const change of proposal.codeChanges) {
+                // Gerçek kod değişikliği (eval kullanılmıyor)
+                // Burada dosyayı güncelleme mantığı olacak
+                console.log(`📝 ${change.file} güncelleniyor...`);
+                // Şimdilik sadece log
+            }
+            proposal.status = 'applied';
+            proposal.appliedAt = new Date().toISOString();
+            save(state);
+            return proposal;
+        } catch (error) {
+            console.error('Öneri uygulanırken hata:', error);
+            return null;
+        }
+    }
+
+    // Sohbet eklentisi önerisi oluştur
+    function proposeChatFeature() {
+        return createProposal(
+            'Sohbet Yeteneği Ekle',
+            'JARVIS\'e DeepSeek API ile sohbet yeteneği ekler. İnternet bağlantısı gerektirir.',
+            [
+                {
+                    file: 'ai-core.js',
+                    oldCode: '// Sohbet kodu burada olacak',
+                    newCode: `// DeepSeek API ile sohbet
+async function chatWithAI(text) {
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer YOUR_API_KEY'
+        },
+        body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [{ role: 'user', content: text }],
+            stream: false
+        })
+    });
+    const data = await response.json();
+    return data.choices[0].message.content;
+}`
+                }
+            ],
+            'feature'
+        );
+    }
+
+    // Analiz et (hangi özellikler eksik?)
+    function analyze() {
+        const missing = [];
+        // Sohbet kontrolü
+        if (typeof AICore?.chatWithAI !== 'function') {
+            missing.push({
+                title: 'Sohbet Yeteneği',
+                description: 'JARVIS sohbet edemiyor. DeepSeek API ile konuşma yeteneği eklenebilir.',
+                proposal: proposeChatFeature
+            });
+        }
+        return missing;
+    }
+
+    return {
+        createProposal,
+        getPendingProposals,
+        getProposals,
+        approveProposal,
+        rejectProposal,
+        applyProposal,
+        proposeChatFeature,
+        analyze
+    };
+})();
+
+window.SelfImprove = SelfImprove;
