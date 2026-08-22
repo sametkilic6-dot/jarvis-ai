@@ -1,4 +1,4 @@
-// ai-core.js - JARVIS AI Core v19 (Hata yönetimi geliştirildi)
+// ai-core.js - JARVIS AI Core v20 (Düzeltilmiş)
 
 const AICore = (function() {
     const PATTERNS = {
@@ -82,7 +82,7 @@ const AICore = (function() {
         ]
     };
 
-    // ---- KEYLESSAI İLE SOHBET (HATA YÖNETİMİ GELİŞTİRİLDİ) ----
+    // ---- KEYLESSAI İLE SOHBET ----
     async function chatWithAI(text) {
         try {
             const response = await fetch('https://keylessai.thryx.workers.dev/v1/chat/completions', {
@@ -103,16 +103,8 @@ const AICore = (function() {
             });
 
             if (!response.ok) {
-                // HTTP hata kodlarını yakala
                 const errorText = await response.text();
-                let errorMsg = `HTTP ${response.status}`;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMsg = errorJson.error?.message || errorMsg;
-                } catch (e) {
-                    errorMsg = errorText || errorMsg;
-                }
-                throw new Error(errorMsg);
+                throw new Error(errorText || `HTTP ${response.status}`);
             }
 
             const data = await response.json();
@@ -324,7 +316,7 @@ const AICore = (function() {
             };
         }
 
-        // 1. Önce yerel komutları dene
+        // 1. Önce yerel komutları kontrol et (ÖNCE!)
         const localResult = handleLocalCommand(text);
         if (localResult.handled) {
             return {
@@ -344,7 +336,6 @@ const AICore = (function() {
                     source: 'ai'
                 };
             } else {
-                // AI bağlanamazsa bilgilendir
                 return {
                     success: true,
                     response: `🤖 JARVIS yerel modda çalışıyor.\n\n📝 **Yardım:** "Yardım" yazarak tüm komutları görebilirsin.\n\n🌐 **AI bağlantısı:** ${aiResult.error}`,
