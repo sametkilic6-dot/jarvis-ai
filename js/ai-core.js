@@ -1,4 +1,4 @@
-// ai-core.js - JARVIS AI Core v18 (KeylessAI ile sohbet eklendi)
+// ai-core.js - JARVIS AI Core v19 (Hata yönetimi geliştirildi)
 
 const AICore = (function() {
     const PATTERNS = {
@@ -82,7 +82,7 @@ const AICore = (function() {
         ]
     };
 
-    // ---- KEYLESSAI İLE SOHBET FONKSİYONU ----
+    // ---- KEYLESSAI İLE SOHBET (HATA YÖNETİMİ GELİŞTİRİLDİ) ----
     async function chatWithAI(text) {
         try {
             const response = await fetch('https://keylessai.thryx.workers.dev/v1/chat/completions', {
@@ -103,8 +103,16 @@ const AICore = (function() {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error?.message || 'AI hatası');
+                // HTTP hata kodlarını yakala
+                const errorText = await response.text();
+                let errorMsg = `HTTP ${response.status}`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMsg = errorJson.error?.message || errorMsg;
+                } catch (e) {
+                    errorMsg = errorText || errorMsg;
+                }
+                throw new Error(errorMsg);
             }
 
             const data = await response.json();
@@ -120,7 +128,7 @@ const AICore = (function() {
             console.error('AI hatası:', error);
             return {
                 success: false,
-                error: error.message
+                error: error.message || 'Bağlantı hatası'
             };
         }
     }
@@ -316,6 +324,7 @@ const AICore = (function() {
             };
         }
 
+        // 1. Önce yerel komutları dene
         const localResult = handleLocalCommand(text);
         if (localResult.handled) {
             return {
@@ -325,18 +334,28 @@ const AICore = (function() {
             };
         }
 
-        // Sohbet yeteneği ile AI'ya sor
-        const aiResult = await chatWithAI(text);
-        if (aiResult.success) {
+        // 2. Yerel komut yoksa AI'ya sor
+        try {
+            const aiResult = await chatWithAI(text);
+            if (aiResult.success) {
+                return {
+                    success: true,
+                    response: aiResult.response,
+                    source: 'ai'
+                };
+            } else {
+                // AI bağlanamazsa bilgilendir
+                return {
+                    success: true,
+                    response: `🤖 JARVIS yerel modda çalışıyor.\n\n📝 **Yardım:** "Yardım" yazarak tüm komutları görebilirsin.\n\n🌐 **AI bağlantısı:** ${aiResult.error}`,
+                    source: 'local'
+                };
+            }
+        } catch (error) {
+            console.error('Think hatası:', error);
             return {
                 success: true,
-                response: aiResult.response,
-                source: 'ai'
-            };
-        } else {
-            return {
-                success: true,
-                response: '🤔 Bu komutu anlamadım. Yardım için "Yardım" yazabilirsin.',
+                response: '🤖 JARVIS yerel modda çalışıyor. "Yardım" yazarak komutları görebilirsin.',
                 source: 'local'
             };
         }
