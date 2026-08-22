@@ -1,4 +1,4 @@
-// self-improve.js - JARVIS Kendini Güncelleme Core v7 (Gerçek Kod Değişikliği)
+// self-improve.js - JARVIS Kendini Güncelleme Core v8 (AI servisini değiştir)
 
 const SelfImprove = (function() {
     const STORAGE_KEY = 'jarvis_self_improve_v1';
@@ -25,7 +25,7 @@ const SelfImprove = (function() {
             title,
             description,
             type,
-            codeChanges, // [{ file: 'ai-core.js', oldCode: '...', newCode: '...' }]
+            codeChanges,
             status: 'pending',
             createdAt: new Date().toISOString(),
             appliedAt: null
@@ -59,7 +59,6 @@ const SelfImprove = (function() {
         return proposal;
     }
 
-    // GERÇEK KOD DEĞİŞİKLİĞİ
     function applyProposal(id) {
         const proposal = state.proposals.find(p => p.id === id);
         if (!proposal || proposal.status !== 'approved') return null;
@@ -67,49 +66,34 @@ const SelfImprove = (function() {
         try {
             for (const change of proposal.codeChanges) {
                 console.log(`📝 ${change.file} güncelleniyor...`);
-
-                // 1. Mevcut kodu al
-                const currentCode = change.oldCode;
-
-                // 2. Yeni kodu bul
-                const newCode = change.newCode;
-
-                // 3. Gerçek kod değişikliği (eval ile güncelleme)
-                // NOT: Bu güvenlik riski taşır, ama JARVIS'in amacı bu.
-                // Sadece senin onayladığın kodlar çalışır.
-                try {
-                    // Fonksiyonu güncelle
-                    if (change.file === 'ai-core.js') {
-                        // AICore içindeki chatWithAI fonksiyonunu güncelle
-                        if (window.AICore) {
-                            // Yeni fonksiyonu çalıştır
-                            const fn = new Function('return ' + newCode)();
-                            window.AICore.chatWithAI = fn;
-                            console.log('✅ AICore.chatWithAI güncellendi');
-                        }
+                if (change.file === 'ai-core.js' && window.AICore) {
+                    try {
+                        const fn = new Function('return ' + change.newCode)();
+                        window.AICore.chatWithAI = fn;
+                        console.log('✅ AICore.chatWithAI güncellendi');
+                    } catch (e) {
+                        console.error('❌ Kod uygulama hatası:', e);
+                        return null;
                     }
-                } catch (e) {
-                    console.error('❌ Kod uygulama hatası:', e);
-                    return null;
                 }
             }
-
             proposal.status = 'applied';
             proposal.appliedAt = new Date().toISOString();
             save(state);
             return proposal;
-
         } catch (error) {
             console.error('Öneri uygulanırken hata:', error);
             return null;
         }
     }
 
-    // Sohbet eklentisi önerisi (KeylessAI)
-    function proposeChatFeature() {
+    // ---- AI SERVİSİ ÖNERİLERİ ----
+
+    // 1. DeepSeek API (ücretsiz, API anahtarı gerekir)
+    function proposeDeepSeek(apiKey = 'YOUR_API_KEY') {
         return createProposal(
-            'Sohbet Yeteneği Ekle (KeylessAI)',
-            'JARVIS\'e KeylessAI ile sohbet yeteneği ekler. API anahtarı gerekmez, ücretsiz.',
+            'AI Servisini Değiştir: DeepSeek API',
+            `JARVIS'in AI servisini DeepSeek API ile değiştirir. API anahtarı gerekir: ${apiKey}`,
             [
                 {
                     file: 'ai-core.js',
@@ -117,18 +101,15 @@ const SelfImprove = (function() {
                     newCode: `
 async function chatWithAI(text) {
     try {
-        const response = await fetch('https://keylessai.thryx.workers.dev/v1/chat/completions', {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer not-needed'
+                'Authorization': 'Bearer ${apiKey}'
             },
             body: JSON.stringify({
-                model: 'gpt-4o',
-                messages: [
-                    { role: 'system', content: 'Sen JARVIS\\'sin. Kullanıcı ile sohbet ediyorsun.' },
-                    { role: 'user', content: text }
-                ],
+                model: 'deepseek-chat',
+                messages: [{ role: 'user', content: text }],
                 stream: false,
                 max_tokens: 512
             })
@@ -136,9 +117,64 @@ async function chatWithAI(text) {
         const data = await response.json();
         return data.choices[0].message.content;
     } catch (error) {
-        console.error('AI hatası:', error);
-        return 'AI bağlantısı kurulamadı.';
+        console.error('DeepSeek hatası:', error);
+        return 'DeepSeek bağlantısı kurulamadı.';
     }
+}`
+                }
+            ],
+            'feature'
+        );
+    }
+
+    // 2. Hugging Face (ücretsiz, API anahtarı gerekir)
+    function proposeHuggingFace(apiKey = 'YOUR_API_KEY') {
+        return createProposal(
+            'AI Servisini Değiştir: Hugging Face',
+            'JARVIS\'in AI servisini Hugging Face ile değiştirir. API anahtarı gerekir.',
+            [
+                {
+                    file: 'ai-core.js',
+                    oldCode: '// Sohbet kodu burada olacak',
+                    newCode: `
+async function chatWithAI(text) {
+    try {
+        const response = await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${apiKey}'
+            },
+            body: JSON.stringify({
+                inputs: text,
+                parameters: { max_new_tokens: 512 }
+            })
+        });
+        const data = await response.json();
+        return data[0]?.generated_text || 'Cevap alınamadı.';
+    } catch (error) {
+        console.error('Hugging Face hatası:', error);
+        return 'Hugging Face bağlantısı kurulamadı.';
+    }
+}`
+                }
+            ],
+            'feature'
+        );
+    }
+
+    // 3. Tamamen Yerel (Offline) - AI'yı kaldır
+    function proposeOffline() {
+        return createProposal(
+            'AI Servisini Kaldır: Tamamen Yerel',
+            'JARVIS\'in AI sohbet yeteneğini tamamen kaldırır. Sadece yerel hafıza komutları çalışır.',
+            [
+                {
+                    file: 'ai-core.js',
+                    oldCode: '// Sohbet kodu burada olacak',
+                    newCode: `
+async function chatWithAI(text) {
+    return 'JARVIS yerel modda çalışıyor. Sohbet yeteneği devre dışı.';
 }`
                 }
             ],
@@ -150,12 +186,16 @@ async function chatWithAI(text) {
         const missing = [];
         // Sohbet kontrolü
         if (typeof AICore?.chatWithAI !== 'function') {
-            const proposal = proposeChatFeature();
-            missing.push({
-                title: 'Sohbet Yeteneği',
-                description: 'JARVIS sohbet edemiyor. KeylessAI ile ücretsiz sohbet eklenebilir.',
-                proposal: proposal
-            });
+            // Mevcut AI bağlantı durumunu kontrol et
+            // KeylessAI çalışmıyorsa, alternatif öner
+            const currentAI = localStorage.getItem('jarvis_ai_service') || 'keylessai';
+            if (currentAI === 'keylessai') {
+                missing.push({
+                    title: 'AI Servisini Değiştir',
+                    description: 'KeylessAI çalışmıyor. DeepSeek API veya Hugging Face ile değiştirebilirsin.',
+                    proposal: proposeDeepSeek
+                });
+            }
         }
         return missing;
     }
@@ -167,7 +207,9 @@ async function chatWithAI(text) {
         approveProposal,
         rejectProposal,
         applyProposal,
-        proposeChatFeature,
+        proposeDeepSeek,
+        proposeHuggingFace,
+        proposeOffline,
         analyze
     };
 })();
